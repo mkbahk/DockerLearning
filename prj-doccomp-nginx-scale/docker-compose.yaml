@@ -3,5 +3,10 @@ services:
    web:
       image: "nginx:latest"
       ports:
-         - "10080-10085:80"
-#$ docker-compose up -d --scale web=5
+         - "8380-8389:80"
+      networks:
+         - nginx-net
+networks:
+   nginx-net:
+
+#$ docker-compose up -d --scale web=10

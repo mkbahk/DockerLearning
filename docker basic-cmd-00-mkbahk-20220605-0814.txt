@@ -34,6 +34,28 @@ docker container run [OPTIONS] IMAGE[:TAG|@DIGEST] [COMMAND] [ARG...]
 
 엄청나게 직관적인 옵션으로 몇번 실행해보면 자연스럽게 익숙해집니다.
 
+===============
+설치상태 확인
+===============
+docker --version
+Docker version 19.03.8, build afacb8b7f0
+
+
+mkbahk@srv161:~$ sudo systemctl status docker*
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/etc/systemd/system/docker.service; enabled; vendor preset: enabled)
+  Drop-In: /etc/systemd/system/docker.service.d
+           └─mount_propagation_flags.conf
+   Active: active (running) since Sat 2022-06-04 15:03:11 KST; 20h ago
+     Docs: http://docs.docker.com
+ Main PID: 41779 (dockerd)
+    Tasks: 108
+   CGroup: /system.slice/docker.service
+           ├─35736 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 54320 -container-ip 172.17.0.4 -container-port 5432
+           ├─41779 /usr/bin/dockerd
+           └─47091 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8989 -container-ip 172.17.0.3 -container-port 80
+
+
 =========================
 Docker 핵심명령어
 =========================
@@ -47,8 +69,16 @@ docker network ls
 
 docker container logs
 docker container inspect
-docker container rm (==docker rm)  //container 삭제
+
 docker image rm(==docker rmi) //image 삭제
+docker container rm (==docker rm)  //container 삭제
+docker volume rm
+docker network rm
+
+docker image prune
+docker container prune
+docker volume prune
+docker network prune
 docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 멤버유지
 
 =========================
@@ -200,6 +230,13 @@ docker container run -it e9e99be2481c bash	//???
 +docker start e9e99be2481c
 docker exec e9e99be2481c ping 8.8.8.8
 
+
+
+=========================
+Docker Snapshot, Backup & Restore
+=========================
+
+
 docker commit e9e99be2481c mkbahk/ubuntuwithping
 docker save mkbahk/ubuntuwithping:latest -o ubuntuwithping.docker.image
 
@@ -225,6 +262,13 @@ postgres                latest    5b21e2e86aab   6 days ago       376MB
 
 docker rmi mkbahk/ubuntuwithping:latest
 
+Docker export --> docker import
+Docker save --> docker load
+
+
+=========================
+Public Registry 에 등록 push/pull
+=========================
 
 docker tag mkbahk/ubuntuwithping:latest docker.io/mkbahk/ubuntuwithping:1.9
 docker login   //dockerhub.com 에 로그인해야 함. ]
@@ -249,6 +293,11 @@ PS C:\Users\mkbah> docker stop 2a6dd1553358
 docker container run -it mkbahk/ubuntuwithping:latest ping 8.8.8.8
 
 
+
+
+=========================
+Docker상에 S/W 개발환경 구성
+=========================
 
 //postgresql 설치
 
@@ -280,8 +329,6 @@ drop table public.HelloTable;
 //zeppelin
 docker container run -d -p 8787:8080 --link postgres:postgres --name zeppelin zeppelin:0.10.1
  
-
-
 
 
 //mysql 설치 및 서비스 수행, 암호없이 접속 + wordpress 설치 및 mysql와 연결
@@ -316,7 +363,9 @@ docker container run -d --name wordpress --link mysql:mysql -v wordpress:/var/ww
 
 
 
-
+=========================
+Docker Container와 Host간의 파일 교환
+=========================
 	
 //파일 Upload, Download
 //host -> Container
@@ -384,6 +433,9 @@ docker container run -it -v nfsvol:/mnt/nvfvol --name ubuntu01 ubuntu:18.04 bash
 	echo "Created by ubuntu01" >> ubuntu01-nfs.txt
 	ls -al
 
+====================
+docker container에 특정 Device 마운트
+====================
 
 //docker가 HOST의 특정 장치를 사용하도록 하는 명령
 docker run --rm --gpus all nvidia/cuda:10.0-devel-ubuntu18.04 nvidia-smi
@@ -528,11 +580,61 @@ mkbahk@srv161:~$ docker network inspect 64e80fa4479d
 
 
 
-Docker-compose
-https://www.daleseo.com/docker-compose-file/
+
+docker network create ubuntu-network
+docker network ls
+docker network inspect ubuntu-network
+
+//터미널 창을 2개 여세요. 각각의 창에
+창1: 
+docker container run --rm -it --name ubuntu01 --network ubuntu-network ubuntu:18.04 bash
+
+창2:
+docker container run --rm -it --name ubuntu02 --network ubuntu-network ubuntu:18.04 bash
+
+//두개의 ubuntu:18.04 컨테이너에 아래 명령들을 수행해 ip관련 툴들을 설치합니다.
+
+	apt update -y
+	apt install iputils-ping -y   	//ping 툴 설치
+	apt install net-tools -y 		//ifconfig 툴 설치
+	apt install iproute2 -y 		// ip commands 들 설치
+
+각각의 창에서
+	ifconfig
+	ip a
+	ip route
+	netstat -nltp
+	netstat --route
+	ping ubuntu01
+	ping ubuntu02
+	ping ubuntu01.ubuntu-network
+	ping ubuntu02.ubuntu-network
+
+//창3 새로 여세요
+docker container run --rm -it --name ubuntu03 ubuntu:18.04 bash
+	apt update -y
+	apt install iputils-ping -y   	
+	apt install net-tools -y 		
+	apt install iproute2 -y 		
+	ifconfig
+
+docker network connect ubuntu-network ubuntu03
+
+//ubuntu03 container 내부에서
+	ping ubuntu01
+	ping ubuntu02
 
 
+//HOST창에서
+docker network disconnect bridge ubuntu03
+
+//ubuntu03 창에서
+ifconfig
+
+
+=================
 간단 Dockerfile
+=================
 https://javacan.tistory.com/entry/docker-start-7-create-image-using-dockerfile
 
 mkbahk@host207-ipusrv16:~$ cat Dockerfile
@@ -543,6 +645,25 @@ ENTRYPOINT ["python3", "/graphcore-ipu-demo/mnist-cnn/mnist-cnn-keras-functional
 docker build --tag mkbahk/gc_p20tf21_mnist_ipu_autorun:2.0 .
 
 docker push mkbahk/gc_p20tf21_mnist_ipu_autorun:2.0
+
+
+==================
+Docker-compose
+==================
+sudo curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+cd /usr/bin
+ls -s /usr/local/bin/docker-compose docker-compose
+
+docker-compose --version
+	docker-compose version 1.29.2, build 5becea4c
+
+
+https://www.daleseo.com/docker-compose-file/
+
+
+
 
 
 docker compsor

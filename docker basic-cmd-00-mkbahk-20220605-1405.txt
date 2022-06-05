@@ -578,9 +578,6 @@ mkbahk@srv161:~$ docker network inspect 64e80fa4479d
 ]
 
 
-
-
-
 docker network create ubuntu-network
 docker network ls
 docker network inspect ubuntu-network

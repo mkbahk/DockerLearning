@@ -108,7 +108,7 @@ Use "kubectl options" for a list of global command-line options (applies to all 
 프로그램 기동방법 3가지
 =====================================================================================
 1. Interactive: docker가 제공
-2. Service(Daemon): docker, docker-compose, docker-swarm가 제공
+2. Service(Daemon): docker, docker-compose, docker-swarm이 제공
 3. Schedule job: kubernetes가 위 1, 2 + 제공
 
 =====================================================================================
@@ -542,6 +542,41 @@ ENTRYPOINT ["python3", "/graphcore-ipu-demo/mnist-cnn/mnist-cnn-keras-functional
 docker build --tag mkbahk/gc_p20tf21_mnist_ipu_autorun:2.0 .
 
 docker push mkbahk/gc_p20tf21_mnist_ipu_autorun:2.0
+
+
+
+cd
+mkdir -p prj-docfile-SmartCar
+
+vi Dockerfile
+
+docker run -it --name SmartCar ubuntu:18.04 bash
+
+apt update -y
+apt install iputils-ping -y   	
+apt install net-tools -y 		
+apt install iproute2 -y  
+apt install curl wget nano -y
+
+apt install software-properties-common -y
+add-apt-repository ppa:deadsnakes/ppa -y
+apt update -y
+apt install python3.8 -y
+apt install python3-pip -y
+pip3 install -U pip -q
+pip3 install tensorflow==2.6.2 -q
+pip3 install keras -q
+pip3 install pandas -q
+pip3 install matplotlib -q
+pip3 install sklearn -q
+pip3 install flask -q
+
+apt install git -y
+cd /root
+git clone https://github.com/mkbahk/IPULearning -q
+cd /root/IPULearning/SmartCar/
+python3 smartcar_dnn_model.py
+
 
 
 =====================================================================================

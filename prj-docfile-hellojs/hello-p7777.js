@@ -3,7 +3,7 @@ var os = require('os');
 var http = require('http');
 var handleRequest = function(request, response) {
   response.writeHead(200);
-  response.end("What's up, man! I'm "+os.hostname()+", running for Graphocore IPUs.");
+  response.end("What's up, man! I'm "+os.hostname()+", running by Moon-Kee Bahk.");
   //log
   console.log("["+Date(Date.now()).toLocaleString()+"] "+os.hostname());
 }

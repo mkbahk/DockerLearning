@@ -26,7 +26,7 @@ def predict():
         x=pd.DataFrame.from_dict(params, orient='index').transpose()
 
         with graph.as_default():
-            model = load_model('/root/DockerLearning/SmartCar/smartcar_dnn_model.h5')
+            model = load_model('/root/DockerLearning/prj-docfile-SmartCar/smartcar_dnn_model.h5')
             data["prediction"] = str(model.predict(x).argmax())
             data["success"] = True
         #endwith

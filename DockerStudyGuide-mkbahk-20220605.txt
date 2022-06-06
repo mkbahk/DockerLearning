@@ -626,6 +626,8 @@ ls -al
 
 cat Dockerfile
 
+  GNU nano 2.9.3                                                                     Dockerfile
+
 #docker build . -t mkbahk/smartcar:0.1
 FROM ubuntu:18.04
 EXPOSE 9002
@@ -647,24 +649,24 @@ RUN pip3 install matplotlib -q
 RUN pip3 install sklearn -q
 RUN pip3 install flask -q
 RUN apt install git -y
-RUN mkdir -p /root/IPULearning/SmartCar
-ADD CarDrivingIncidentInfo.csv /root/IPULearning/SmartCar/CarDrivingIncidentInfo.csv
-ADD CarDrivingIncidentInfo_Test.csv /root/IPULearning/SmartCar/CarDrivingIncidentInfo_Test.csv
-ADD smartcar_dnn_model.h5 /root/IPULearning/SmartCar/smartcar_dnn_model.h5
-ADD smartcar_dnn_model.py /root/IPULearning/SmartCar/smartcar_dnn_model.py
-ADD smartcar_dnn_service_2.py /root/IPULearning/SmartCar/smartcar_dnn_service_2.py
-RUN ls -al /root/IPULearning/SmartCar/
-RUN python3 --version
-RUN python3 /root/IPULearning/SmartCar/smartcar_dnn_model.py
+RUN git clone https://github.com/mkbahk/DockerLearning /root/DockerLearning
+#RUN ls -al /root/DockerLearning/prj-docfile-SmartCar/
+#RUN python3 --version
+RUN python3 /root/DockerLearning/prj-docfile-SmartCar/smartcar_dnn_model.py
 RUN echo "Hello guys!!!"
 RUN echo "Execute cmd: docker run -d -p 9002:9002 mkbahk/smartcar:0.1"
 RUN echo "and ..."
 RUN echo 'Access with: curl -X GET "http://srv161:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0"'
-CMD python3 /root/IPULearning/SmartCar/smartcar_dnn_service_2.py
+#
+CMD python3 /root/DockerLearning/prj-docfile-SmartCar/smartcar_dnn_service_2.py
+#
+
 
 //이미지 생성
 docker system prune -a
 docker build . -t mkbahk/smartcar:0.1
+docker image ls
+
 
 //서비스로 기동
 docker run -d -p 9002:9002 mkbahk/smartcar:0.1
@@ -673,11 +675,14 @@ docker run -d -p 9002:9002 mkbahk/smartcar:0.1
 docker container ls
 
 //외부로 부터, 다른 창에서 접근
-curl -X GET "http://172.17.0.2:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0"
+curl -X GET "http://ip_address:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0"
 
 또는 브라우저에서
 
 http://ip_address:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0
+
+
+
 
 =====================================================================================
 Docker-compose

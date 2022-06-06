@@ -19,14 +19,17 @@ RUN pip3 install matplotlib -q
 RUN pip3 install sklearn -q
 RUN pip3 install flask -q
 RUN apt install git -y
-RUN git clone https://github.com/mkbahk/DockerLearning /root/DockerLearning
-#RUN ls -al /root/DockerLearning/prj-docfile-SmartCar/
-#RUN python3 --version
-RUN python3 /root/DockerLearning/prj-docfile-SmartCar/smartcar_dnn_model.py
+RUN mkdir -p /root/IPULearning/SmartCar 
+ADD CarDrivingIncidentInfo.csv /root/IPULearning/SmartCar/CarDrivingIncidentInfo.csv
+ADD CarDrivingIncidentInfo_Test.csv /root/IPULearning/SmartCar/CarDrivingIncidentInfo_Test.csv
+ADD smartcar_dnn_model.h5 /root/IPULearning/SmartCar/smartcar_dnn_model.h5
+ADD smartcar_dnn_model.py /root/IPULearning/SmartCar/smartcar_dnn_model.py
+ADD smartcar_dnn_service_2.py /root/IPULearning/SmartCar/smartcar_dnn_service_2.py
+RUN ls -al /root/IPULearning/SmartCar/
+RUN python3 --version
+RUN python3 /root/IPULearning/SmartCar/smartcar_dnn_model.py
 RUN echo "Hello guys!!!"
 RUN echo "Execute cmd: docker run -d -p 9002:9002 mkbahk/smartcar:0.1"
 RUN echo "and ..."
 RUN echo 'Access with: curl -X GET "http://srv161:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0"'  
-#
-CMD python3 /root/DockerLearning/prj-docfile-SmartCar/smartcar_dnn_service_2.py
-#
+CMD python3 /root/IPULearning/SmartCar/smartcar_dnn_service_2.py

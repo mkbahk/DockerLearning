@@ -576,6 +576,11 @@ cd /root
 git clone https://github.com/mkbahk/IPULearning -q
 cd /root/IPULearning/SmartCar/
 python3 smartcar_dnn_model.py
+python3 smartcar_dnn_service_2.py
+
+//다른 창에서
+curl -X GET "http://172.17.0.2:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&acciArea=1&drvCond=1&innCond=2&carSpd=2&SteeAng=0"
+
 
 
 

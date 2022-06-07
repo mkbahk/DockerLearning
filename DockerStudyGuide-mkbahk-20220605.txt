@@ -894,33 +894,33 @@ node {
 
 //Basic Step#2
 node {
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER_ID', passwordVariable: 'DOCKER_USER_PASSWORD']]){
-	    stage('Pull') {
-		git 'https://github.com/mkbahk/nginxscale.git'
-	    }
-	    stage('Unit Test') {
-	    }
-	    stage('Build') {
-		sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
-	    }
-	    stage('Tag') {
-		sh(script: 'docker tag ${DOCKER_USER_ID}/nginxscale:latest ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-	    }
-	    stage('Push') {
-		sh(script: 'docker login -u ${DOCKER_USER_ID} -p ${DOCKER_USER_PASSWORD}')
-		sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-		sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:latest')
-	    }
-	    stage('Deploy') {
-		try {
-		    sh(script: 'docker stop nginxscale')
-		    sh(script: 'docker rm nginxscale')
-		} catch(e) {
-		    echo "No nginxscale container exists"
-		}
-		sh(script: 'docker run -d -p 8380:80 --name=nginxscale ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-	    }
-  }
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER_ID', passwordVariable: 'DOCKER_USER_PASSWORD']]) {
+        stage('Pull') {
+            git 'https://github.com/mkbahk/nginxscale.git'
+        }
+        stage('Unit Test') {
+        }
+        stage('Build') {
+            sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+        }
+        stage('Tag') {
+            sh(script: 'docker tag ${DOCKER_USER_ID}/nginxscale:latest ${DOCKER_USER_ID}/nginxscale:0.${BUILD_NUMBER}')
+        }
+        stage('Push') {
+            sh(script: 'docker login -u ${DOCKER_USER_ID} -p ${DOCKER_USER_PASSWORD}')
+            sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:0.${BUILD_NUMBER}')
+            sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:latest')
+        }
+        stage('Deploy') {
+            try {
+                sh(script: 'docker stop nginxscale')
+                sh(script: 'docker rm nginxscale')
+            } catch(e) {
+                echo "No nginxscale container exists"
+            }
+            sh(script: 'docker run -d -p 8380:80 --name=nginxscale ${DOCKER_USER_ID}/nginxscale:0.${BUILD_NUMBER}')
+        }
+    }
 }
 
 //Docker-compose

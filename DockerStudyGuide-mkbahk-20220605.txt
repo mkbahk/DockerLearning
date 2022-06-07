@@ -815,3 +815,80 @@ Docker swarm
 
 
 
+
+=====================================================================================
+CI/CD 중 CI->Jenkins, CD-Kubernetes, Jenkins를 이용한 CI 구현
+=====================================================================================
+
+
+docker run -u root -d -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
+
+docker run -u root  -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /run/docker.sock:/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
+
+a6bbdb247ef2433c8dec708aeb3ee95c
+
+
+//jenkins docker sample
+//github의 branch의 default name이  main이면 문제가 발생함. main->master로 rename하면 문제가 해결됨.
+
+
+node {
+    stage('Pull') {
+        git 'https://github.com/mkbahk/nginxscale.git'
+    }
+    stage('Unit Test') {
+    }
+    stage('Build') {
+        sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+    }
+    stage('Tag') {
+        sh(script: 'docker tag mkbahk/nginxscale:latest mkbahk/nginxscale:2.1')
+    }
+    stage('Push') {
+        sh(script: 'docker login -u mkbahk -p "P@ssw0rd"' )
+        sh(script: 'docker push mkbahk/nginxscale:2.1' )
+        sh(script: 'docker push mkbahk/nginxscale:latest' )
+    }
+    stage('Deploy') {
+        try {
+            sh(script: 'docker stop nginxscale')
+            sh(script: 'docker rm nginxscale')
+        } catch(e) {
+            echo "No nginxscale container exists"
+        }
+        sh(script: 'docker run -d -p 8380:80 --name=nginxscale mkbahk/nginxscale:latest')
+    }
+}
+
+
+node {
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER_ID', passwordVariable: 'DOCKER_USER_PASSWORD']])
+    stage('Pull') {
+        git 'https://github.com/mkbahk/nginxscale.git'
+    }
+    stage('Unit Test') {
+    }
+    stage('Build') {
+        sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+    }
+    stage('Tag') {
+        sh(script: 'docker tag ${DOCKER_USER_ID}/nginxscale:latest ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+    }
+    stage('Push') {
+        sh(script: 'docker login -u ${DOCKER_USER_ID} -p ${DOCKER_USER_PASSWORD}')
+        sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+        sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:latest')
+    }
+    stage('Deploy') {
+        try {
+            sh(script: 'docker stop nginxscale')
+            sh(script: 'docker rm nginxscale')
+        } catch(e) {
+            echo "No nginxscale container exists"
+        }
+        sh(script: 'docker run -d -p 8380:80 --name=nginxscale ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+    }
+}
+
+
+

@@ -832,6 +832,38 @@ a6bbdb247ef2433c8dec708aeb3ee95c
 //github의 branch의 default name이  main이면 문제가 발생함. main->master로 rename하면 문제가 해결됨.
 
 
+Program과 수행환경은 Dockerfile or docker-compose.yaml로 만들어 놓은 후
+
+git clone https://github.com/mkbahk/nginxscale.git
+docker build --force-rm=true -t mkbahk/nginxscale:latest .    
+docker tag mkbahk/nginxscale:latest mkbahk/nginxscale:2.1
+
+docker login -u mkbahk -p "P@ssw0rd"'
+docker push mkbahk/nginxscale:2.1
+docker push mkbahk/nginxscale:latest
+
+docker stop nginxscale
+docker rm nginxscale
+docker run -d -p 8380:80 --name=nginxscale mkbahk/nginxscale:latest
+	
+
+//jenkin pipeline
+node {
+	stage('Pull') {
+	}
+	stage('Unit Test') {
+	}
+	stage('Build') {
+	}
+	stage('Tag') {
+	}
+	stage('Push') {
+	}
+	stage('Deploy') {
+	}
+}
+
+//Basic Step
 node {
     stage('Pull') {
         git 'https://github.com/mkbahk/nginxscale.git'
@@ -860,35 +892,63 @@ node {
     }
 }
 
-
+//Basic Step#2
 node {
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER_ID', passwordVariable: 'DOCKER_USER_PASSWORD']])
-    stage('Pull') {
-        git 'https://github.com/mkbahk/nginxscale.git'
-    }
-    stage('Unit Test') {
-    }
-    stage('Build') {
-        sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
-    }
-    stage('Tag') {
-        sh(script: 'docker tag ${DOCKER_USER_ID}/nginxscale:latest ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-    }
-    stage('Push') {
-        sh(script: 'docker login -u ${DOCKER_USER_ID} -p ${DOCKER_USER_PASSWORD}')
-        sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-        sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:latest')
-    }
-    stage('Deploy') {
-        try {
-            sh(script: 'docker stop nginxscale')
-            sh(script: 'docker rm nginxscale')
-        } catch(e) {
-            echo "No nginxscale container exists"
-        }
-        sh(script: 'docker run -d -p 8380:80 --name=nginxscale ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
-    }
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER_ID', passwordVariable: 'DOCKER_USER_PASSWORD']]){
+	    stage('Pull') {
+		git 'https://github.com/mkbahk/nginxscale.git'
+	    }
+	    stage('Unit Test') {
+	    }
+	    stage('Build') {
+		sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+	    }
+	    stage('Tag') {
+		sh(script: 'docker tag ${DOCKER_USER_ID}/nginxscale:latest ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+	    }
+	    stage('Push') {
+		sh(script: 'docker login -u ${DOCKER_USER_ID} -p ${DOCKER_USER_PASSWORD}')
+		sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+		sh(script: 'docker push ${DOCKER_USER_ID}/nginxscale:latest')
+	    }
+	    stage('Deploy') {
+		try {
+		    sh(script: 'docker stop nginxscale')
+		    sh(script: 'docker rm nginxscale')
+		} catch(e) {
+		    echo "No nginxscale container exists"
+		}
+		sh(script: 'docker run -d -p 8380:80 --name=nginxscale ${DOCKER_USER_ID}/nginxscale:${BUILD_NUMBER}')
+	    }
+  }
 }
 
+//Docker-compose
+node {
+	stage('Pull') {
+		git 'https://github.com/mkbahk/nginxscale.git'
+	}
+	stage('Unit Test') {
+		sh(script: 'docker-compose run --rm unit')
+	}
+	stage('Build') {
+		sh(script: 'docker-compose build app')
+	}
+	stage('Tag') {
+		// 생략 ...
+	}
+	stage('Push') {
+		// 생략 ...
+	}
+	stage('Deploy') {
+		sh(script: 'docker-compose up -d production')
+	}
+}
+
+//docker swarm 배포
+docker service update --image mkbahk/nginxscale:${BUILD_NUMBER} web-app
+
+//Kubernetes 배포
+kubectl set image -f nginx-scale.yml app=mkbahk/nginxscale:${BUILD_NUMBER}
 
 

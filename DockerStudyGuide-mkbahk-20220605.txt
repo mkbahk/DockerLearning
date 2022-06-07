@@ -869,6 +869,7 @@ node {
         git 'https://github.com/mkbahk/nginxscale.git'
     }
     stage('Unit Test') {
+    	sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
     }
     stage('Build') {
         sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
@@ -899,6 +900,7 @@ node {
             git 'https://github.com/mkbahk/nginxscale.git'
         }
         stage('Unit Test') {
+	    sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
         }
         stage('Build') {
             sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    

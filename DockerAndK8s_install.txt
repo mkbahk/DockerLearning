@@ -124,9 +124,9 @@ registry:
   enabled: false
 
 
-docker run -it -d --restart=always -p 5080:8080  --name registry-web  --link private-registry  -v /opt/registry-web-gui/config.yaml:/conf/config.yml:ro  hyper/docker-registry-web
+docker run -it -d --restart=always -p 8080:8080  --name registry-web  --link private-registry  -v /opt/registry-web-gui/config.yaml:/conf/config.yml:ro  hyper/docker-registry-web
 
-http://192.168.56.201:5080
+http://192.168.56.201:8080
 
 
 docker run hello-world

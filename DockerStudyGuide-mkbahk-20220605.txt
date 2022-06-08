@@ -28,17 +28,6 @@ docker container run [OPTIONS] IMAGE[:TAG|@DIGEST] [COMMAND] [ARG...]
 
 //kubernetes == docker + Dockerfile + docker-compose + docker swarm + Plus alpha
 
-
-
-
-
-
-
-
-
-
-
-
 =====================================================================================
 설치상태 확인
 =====================================================================================
@@ -786,7 +775,7 @@ cd
 
 
 =====================================================================================
-Docker-compose scale
+Docker-compose scale up/down
 =====================================================================================
 mkdir -p ./prj-doccomp-nginx-scale
 cd ./prj-doccomp-nginx-scale
@@ -820,11 +809,65 @@ cd
 Docker swarm
 =====================================================================================
 
+//master에서만만만
+docker swarm init --advertise-addr 192.168.56.202
+
+root@master202:~# docker swarm init --advertise-addr 192.168.56.202
+Swarm initialized: current node (sbwsg73qvndqk2uw3zpm9st3u) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-3vg6jgq3kz4wk7vf063grdlclszkfcuhppzxwzib93apxo5dsv-dbsqamlo8084k3hyx3gl4blws 192.168.56.202:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+
+root@master202:~#
 
 
 
+//worker들에서
+docker swarm join --token SWMTKN-1-3vg6jgq3kz4wk7vf063grdlclszkfcuhppzxwzib93apxo5dsv-dbsqamlo8084k3hyx3gl4blws 192.168.56.202:2377
+
+root@master202:~# docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
+sbwsg73qvndqk2uw3zpm9st3u *   master202           Ready               Active              Leader              19.03.8
+j0a4fe3pauhsh485j9rqizznm     worker203           Ready               Active                                  19.03.8
+ma3svopcv53k52mv5so4y4qen     worker204           Ready               Active                                  19.03.8
+root@master202:~#
+
+git clone https://github.com/mkbahk/nginxscale
+cd nginxscale
+docker build . -t mkbahk/nginxscale:1.0
+
+root@master202:~/nginxscale# docker image ls
+REPOSITORY          TAG                 IMAGE ID            CREATED              SIZE
+mkbahk/nginxscale   1.0                 95648d2afd8a        About a minute ago   142MB
 
 
+docker service create --name web --publish 8380:80 --mode global mkbahk/nginxscale:1.0
+
+root@master202:~# docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE                   PORTS
+y5dyik5vczo7        web                 global              3/3                 mkbahk/nginxscale:1.0   *:8380->80/tcp
+
+http://192.168.56.202:8380
+http://192.168.56.203:8380
+http://192.168.56.204:8380
+
+docker service rm y5
+
+docker container ls
+docker container ls -a
+
+docker service create --name web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
+docker service ls
+docker container ls   //모든 호스트에서 쳐보세요.
+
+http://192.168.56.202:8380
+
+docker service scale web=12
+
+docker rm -f $(docker ps -q -aq)  
 
 
 =====================================================================================
@@ -840,7 +883,7 @@ a6bbdb247ef2433c8dec708aeb3ee95c
 
 
 //jenkins docker sample
-//github의 branch의 default name이  main이면 문제가 발생함. main->master로 rename하면 문제가 해결됨.
+//github의 branch의 default name이  main이면 문제가 발생함. main->master로 rename하면 문제가 해결됨. 최근에 github에서 master branch이름을 main으로 변경함으로써 미처 사용 응용프로그램들이 딸아오지 못해서 발생함
 
 
 Program과 수행환경은 Dockerfile or docker-compose.yaml로 만들어 놓은 후

@@ -270,6 +270,71 @@ docker container run -it mkbahk/ubuntuwithping:latest ping 8.8.8.8
 =====================================================================================
 Docker상에 S/W 개발환경 구성
 =====================================================================================
+//python, tensorflow, jypyter notebook 설치
+docker run -it --rm -v $(realpath ~/notebooks):/tf/notebooks -p 8888:8888 tensorflow/tensorflow:latest-jupyter
+//처음부터 daemon으로 띄우지 마세요. 콘솔메세지 보면 초기 아래와 같이 Token값이 표시되고 이용해 새로운 패스워크 입력이 가능합니다.
+
+
+    To access the notebook, open this file in a browser:
+        file:///root/.local/share/jupyter/runtime/nbserver-1-open.html
+    Or copy and paste one of these URLs:
+        http://06fc6c252964:8888/?token=07ba6372a9711bcf4688138b7f25b1e4c13c3b5008ac5e3c
+     or http://127.0.0.1:8888/?token=07ba6372a9711bcf4688138b7f25b1e4c13c3b5008ac5e3c
+
+
+//python, tensorflow, Visual Studio Code환경
+docker run -it tensorflow/tensorflow:latest bash
+
+apt install nano wget git -y
+curl -fsSL https://code-server.dev/install.sh | sh
+
+root@d563f39ea80d:~# code-server
+[2022-06-08T09:31:55.535Z] info  Wrote default config file to ~/.config/code-server/config.yaml
+[2022-06-08T09:31:55.839Z] info  code-server 4.4.0 b088ec7adf9e17bc75215f79e21498eb40da03ed
+[2022-06-08T09:31:55.839Z] info  Using user-data-dir ~/.local/share/code-server
+[2022-06-08T09:31:55.848Z] info  Using config file ~/.config/code-server/config.yaml
+[2022-06-08T09:31:55.848Z] info  HTTP server listening on http://127.0.0.1:8080/
+[2022-06-08T09:31:55.848Z] info    - Authentication is enabled
+[2022-06-08T09:31:55.848Z] info      - Using password from ~/.config/code-server/config.yaml
+[2022-06-08T09:31:55.848Z] info    - Not serving HTTPS
+
+cd .config/code-server
+ls -al
+
+root@d563f39ea80d:~/.config/code-server# cat config.yaml
+bind-addr: 127.0.0.1:8080
+auth: password
+password: e8bb46222a042ddb2c4efe24
+cert: false
+
+//원격접근이 가능하도록 ip_address와 암호를 기억하기 쉬운 것으로 변경하세요.
+root@d563f39ea80d:~/.config/code-server# nano config.yaml
+bind-addr: 0.0.0.0:8080
+auth: password
+password: P@ssw0rd
+cert: false
+
+root@d563f39ea80d:~# code-server
+[2022-06-08T09:35:51.029Z] info  code-server 4.4.0 b088ec7adf9e17bc75215f79e21498eb40da03ed
+[2022-06-08T09:35:51.030Z] info  Using user-data-dir ~/.local/share/code-server
+[2022-06-08T09:35:51.038Z] info  Using config file ~/.config/code-server/config.yaml
+[2022-06-08T09:35:51.038Z] info  HTTP server listening on http://0.0.0.0:8080/
+[2022-06-08T09:35:51.038Z] info    - Authentication is enabled
+[2022-06-08T09:35:51.038Z] info      - Using password from ~/.config/code-server/config.yaml
+[2022-06-08T09:35:51.038Z] info    - Not serving HTTPS
+
+
+docker container ls -a
+
+mkbahk@srv161:~$ docker container ls -a
+CONTAINER ID   IMAGE                                COMMAND                  CREATED             STATUS                      PORTS                                                  NAMES
+d563f39ea80d   tensorflow/tensorflow:latest         "bash"                   6 minutes ago       Exited (0) 6 seconds ago                                                           interesting_mcnulty
+
+docker commit d563f39ea80d mkbahk/tensorflow:code-server-8080
+
+docker run -it -p 8989:8080 mkbahk/tensorflow:code-server-8080 code-server
+
+
 //postgresql 설치
 
 docker container run -d -p 54320:5432 -e POSTGRES_PASSWORD=posgrespw --name postgres postgres:latest 
@@ -347,6 +412,10 @@ docker exec -it postgres-Hr9o bash
 //container -> host 
 docker cp postgres-Hr9o:/tmp/dvdrental.zip   .\dvdrental-co.zip 
 dir
+
+
+
+
 
 =====================================================================================
 docker volume으로 마운트

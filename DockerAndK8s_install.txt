@@ -1,0 +1,189 @@
+=====================================================================================
+O/S pre-Configured
+=====================================================================================
+
+1. 상호가 ssh-copy-id 명령으로 key를 복제하여 상호가 password입력없이 ssh 접속이 가능한 상태임
+
+2. ntp 서버가 설치됨
+    systemctl status ntp
+    ntpq -p
+
+3. /etc/hosts 파일에 아래와 같이 입력됨
+    192.168.56.201	mgmt201
+    192.168.56.202	master202
+    192.168.56.203	worker203
+    192.168.56.204	worker204
+
+4. NFS Service: mgmt202
+    -mgnt202에 NFS Server Installed, 
+     /mnt/nfs_share
+
+    -다른 서버에는 NFS Client Installed
+     sudo mount mgmt201:/mnt/nfs_share /mnt/nfs_share_client
+
+5. Firewall Disabled
+    systemctl stop ufw
+    systemctl disable ufw
+
+6. swapoff -a 됨. Kubernetes때문에
+
+7. mgmt201에 Private Registry:5000 Installed
+
+  //private-registry를 사용하는 Docker Client 설정
+    root@master202:~# cat /etc/docker/daemon.json
+    {
+    "exec-opts": ["native.cgroupdriver=systemd"],
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "100m"
+    },
+    "storage-driver": "overlay2",
+    "insecure-registries":["192.168.56.201:5000"]
+    }
+
+=====================================================================================
+Docker pre-Installed
+=====================================================================================
+
+sudo su -
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg2
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo apt update
+
+sudo add-apt-repository \
+  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) \
+  stable"
+
+sudo apt-get update && sudo apt-get install -y \
+  containerd.io=1.2.13-1 \
+  docker-ce=5:19.03.8~3-0~ubuntu-$(lsb_release -cs) \
+  docker-ce-cli=5:19.03.8~3-0~ubuntu-$(lsb_release -cs) --allow-downgrades
+
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "insecure-registries":["192.168.56.201:5000"] 
+}
+EOF
+
+sudo mkdir -p /etc/systemd/system/docker.service.d
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+sudo chmod 666 /var/run/docker.sock 
+
+docker run hello-world
+docker --version
+
+
+=====================================================================================
+Docker private-registry pre-Installed
+=====================================================================================
+
+[Docker Private Registry 설치]
+https://docs.docker.com/registry/deploying/
+
+//private-registry를 사용할 docker client쪽 설정
+sudo vi /etc/docker/daemon.json
+ 
+{ 
+	"insecure-registries":["<IP>:5000"] 
+}
+
+//private-registry 설정
+docker pull registry:latest
+docker run --name private-registry  -d --restart=always  -p 5000:5000  -v /data/registry:/var/lib/registry/docker/registry/v2  registry:latest
+
+
+// Private-Registry web gui
+https://hihellloitland.tistory.com/63
+
+
+//mgmt201에만 수행해야
+mkdir -p /opt/registry-web-gui/
+cat /opt/registry-web-gui/config.yaml
+
+registry:
+  # 기존에 설치한 docker private registry
+  url: http://192.168.56.201:5000/v2
+  # Docker registry name
+  name: 192.168.56.201:5000
+  # docker 권한 부여
+  readonly: false
+  auth:
+  enabled: false
+
+
+docker run -it -d --restart=always -p 5080:8080  --name registry-web  --link private-registry  -v /opt/registry-web-gui/config.yaml:/conf/config.yml:ro  hyper/docker-registry-web
+
+http://192.168.56.201:5080
+
+
+docker run hello-world
+docker image ls
+
+root@mgmt201:~# docker image ls
+REPOSITORY                        TAG                 IMAGE ID            CREATED             SIZE
+registry                          latest              773dbf02e42e        12 days ago         24.1MB
+hello-world                       latest              feb5d9fea6a5        8 months ago        13.3kB
+hyper/docker-registry-web         latest              0db5683824d8        5 years ago         599MB
+
+
+docker tag hello-world:latest 192.168.56.201:5000/hello-world:latest
+
+root@mgmt201:~# docker image ls
+REPOSITORY                        TAG                 IMAGE ID            CREATED             SIZE
+registry                          latest              773dbf02e42e        12 days ago         24.1MB
+192.168.56.201:5000/hello-world   latest              feb5d9fea6a5        8 months ago        13.3kB
+hello-world                       latest              feb5d9fea6a5        8 months ago        13.3kB
+hyper/docker-registry-web         latest              0db5683824d8        5 years ago         599MB
+
+
+docker push 192.168.56.201:5000/hello-world:latest
+
+
+
+=====================================================================================
+Kubernets pre-Installed
+=====================================================================================
+
+sudo apt-get install -y apt-transport-https curl
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+sudo apt-get update -y
+
+apt install kubeadm=1.20.0-00 kubelet=1.20.0-00 kubectl=1.20.0-00 -y --allow-downgrades -y
+
+sudo apt-mark hold kubelet kubeadm kubectl
+
+kubeadm version
+kubelet --version
+kubectl version
+
+swapoff -a
+sed -i '/swap/d' /etc/fstab
+
+sudo kubeadm init --pod-network-cidr=172.30.0.0/16 --apiserver-advertise-address=192.168.56.202
+
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+//master Node에 pod가 생길 수 있도록 taint 해제
+kubectl taint nodes --all node-role.kubernetes.io/master-
+

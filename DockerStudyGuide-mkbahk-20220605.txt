@@ -95,12 +95,15 @@ docker container logs
 docker container inspect
 docker container inspect --format '{{.NetworkSettings.IPAddress}}' webserver
 
+docker container attach [container_name]  //콘솔에 접속함. 주의 "exit"하면 daemon 도 죽음, Ctrl-P,Q로 나와야 함. 
+docker container exec -it [container_name] bash  //새로운 터미널을 여는 것임. exit 명령으로 나와도 daemon 상태일때는 죽지 않음.
 
 docker image rm(==docker rmi) //image 삭제
 docker container rm (==docker rm)  //container 삭제
 docker volume rm
 docker network rm
 
+//실행 중인 컨테이너들에게 영향을 주지 않음
 docker image prune
 docker container prune
 docker volume prune
@@ -173,7 +176,7 @@ docker  container start [이름]  //수행중이지 않고, docker ps -a로 저�
 docker  container attach [이름 또는 ID]  //여기서 exit하면 종료되므로 Ctrl-p, Ctrl+q로 나오면 살아있음
 
 //데몬으로 기동
-docker  container run -d --name ubuntu_test ubuntu /bin/bash -c "while true; do echo "still live"; sleep 100; done"
+docker  container run -d --name mkbahk_ubuntu ubuntu /bin/bash -c "while true; do echo "still live"; sleep 100; done"
 docker  container exec -it eb3b9e69b18d /bin/bash
 
 docker container run -it -d -p 8381:80 nginx:latest 
@@ -403,7 +406,7 @@ docker run -it -p 8989:8080 mkbahk/tensorflow:code-server-8080 code-server
 
 //postgresql 설치
 
-docker container run -d -p 54320:5432 -e POSTGRES_PASSWORD=posgrespw --name postgres postgres:latest 
+docker container run -d -p 54320:5432 -e POSTGRES_PASSWORD=posgrespw --name mkbahk_postgres postgres:latest 
 psql -h localhost -U postgres -w
 
 외부에서 DBeaver를 통해서 접속합니다.
@@ -429,12 +432,12 @@ select * from public.HelloTable;
 drop table public.HelloTable;
 
 //zeppelin
-docker container run -d -p 8787:8080 --link postgres:postgres --name zeppelin zeppelin:0.10.1
+docker container run -d -p 8787:8080 --link postgres:postgres --name mkbahk_zeppelin zeppelin:0.10.1
  
 
 
 //mysql 설치 및 서비스 수행, 암호없이 접속 + wordpress 설치 및 mysql와 연결
-docker container run -p 3306(바깥쪽):3306(안쪽) --name mysql -d mysql:
+docker container run -p 3306(바깥쪽):3306(안쪽) --name mkbahk_mysql -d mysql:
 docker container ps
 
 PS C:\Users\mkbah> docker container ls
@@ -445,7 +448,7 @@ PS C:\Users\mkbah>
 
 docker logs c9eff902ddbb
 
-docker container run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true --name mysql mysql:latest
+docker container run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true --name mbkahk_mysql mysql:latest
 docker exec -it mysql bash
 	mysql -u root -p
 	Enter  //password가 없습니다.
@@ -457,11 +460,11 @@ docker exec -it mysql bash
 	exit
 
 //wordpress를 위한 mysql 설치
-docker container run -d --name mysql -v mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=wordpress -e MYSQL_DATABASE=wordpress -e MYSQL_USER=wordpress -e MYSQL_PASSWORD=wordpress mysql:5.7
+docker container run -d --name mkahk_mysql -v mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=wordpress -e MYSQL_DATABASE=wordpress -e MYSQL_USER=wordpress -e MYSQL_PASSWORD=wordpress mysql:5.7
 
 
 //wordpress 설치 및 mysql 연결
-docker container run -d --name wordpress --link mysql:mysql -v wordpress:/var/www/html -e WORDPRESS_DB_HOST=mysql:3306 -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -p 8989:80 wordpress:latest
+docker container run -d --name mkbahk_wordpress --link mysql:mysql -v wordpress:/var/www/html -e WORDPRESS_DB_HOST=mysql:3306 -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -p 8989:80 wordpress:latest
 
 =====================================================================================
 Docker Container와 Host간의 파일 교환
@@ -478,9 +481,6 @@ docker exec -it postgres-Hr9o bash
 //container -> host 
 docker cp postgres-Hr9o:/tmp/dvdrental.zip   .\dvdrental-co.zip 
 dir
-
-
-
 
 
 =====================================================================================
@@ -506,12 +506,12 @@ drwxr-xr-x  3 root root  4096  6월  4 14:42 mysql
 drwxrwxrwx  3 root root  4096  6월  4 18:39 pgdata
 drwxr-xr-x  3 root root  4096  6월  4 14:44 wordpress
 
-docker container run -it -v hostvol:/mnt/hostvol --name ubuntu00 ubuntu:18.04 bash
+docker container run -it -v hostvol:/mnt/hostvol --name mkbahk_ubuntu00 ubuntu:18.04 bash
 	cd /mnt/hostvol
 	echo "Created by ubuntu00" >> ubuntu00.txt
 	ls -al
 	
-docker container run -it -v hostvol:/mnt/hostvol --name ubuntu01 ubuntu:18.04 bash
+docker container run -it -v hostvol:/mnt/hostvol --name mkbahk_ubuntu01 ubuntu:18.04 bash
 	cd /mnt/hostvol
 	echo "Created by ubuntu01" >> ubuntu01.txt
 	ls -al
@@ -521,15 +521,23 @@ docker volume create --driver local --opt type=nfs --opt o=addr=218.145.56.74,rw
 docker volume ls
 docker volume inspect nfsvol
 
-docker container run -it -v nvfvol:/mnt/nfsvol --name ubuntu00 ubuntu:18.04 bash
+docker container run -it -v nvfvol:/mnt/nfsvol --name mkbahk_ubuntu00 ubuntu:18.04 bash
 	cd /mnt/nfsvol
 	echo "Created by ubuntu00" >> ubuntu00-nfs.txt
 	ls -al
 	
-docker container run -it -v nfsvol:/mnt/nvfvol --name ubuntu01 ubuntu:18.04 bash
+docker container run -it -v nfsvol:/mnt/nvfvol --name mkbahk_ubuntu01 ubuntu:18.04 bash
 	cd /mnt/nfsvol
 	echo "Created by ubuntu01" >> ubuntu01-nfs.txt
 	ls -al
+
+//기타 Advanced Topic
+docker container run -d -v /webdata:/var/www/html:ro httpd:latest
+
+
+//단일 호스트에서 콘테이너간 파일 공유 예)
+docker run -v /wwwdocs:/wwwdocs -d -p 8081:8080 --name mbkahk_wwwdev mkbahk/tensorflow:code-server-8080 code-server
+docker run -v /wwwdocs:/usr/local/apache2/htdocs:ro -d -p 8082:80 --name mkbahk_wwwprod httpd:latest
 
 =====================================================================================
 docker container에 특정 Device 마운트
@@ -621,10 +629,10 @@ docker network inspect ubuntu-network
 
 //터미널 창을 2개 여세요. 각각의 창에
 창1: 
-docker container run --rm -it --name ubuntu01 --network ubuntu-network ubuntu:18.04 bash
+docker container run --rm -it --name mkbahk_ubuntu01 --network ubuntu-network ubuntu:18.04 bash
 
 창2:
-docker container run --rm -it --name ubuntu02 --network ubuntu-network ubuntu:18.04 bash
+docker container run --rm -it --name mkbahk_ubuntu02 --network ubuntu-network ubuntu:18.04 bash
 
 //두개의 ubuntu:18.04 컨테이너에 아래 명령들을 수행해 ip관련 툴들을 설치합니다.
 
@@ -645,7 +653,7 @@ docker container run --rm -it --name ubuntu02 --network ubuntu-network ubuntu:18
 	ping ubuntu02.ubuntu-network
 
 //창3 새로 여세요
-docker container run --rm -it --name ubuntu03 ubuntu:18.04 bash
+docker container run --rm -it --name mkbahk_ubuntu03 ubuntu:18.04 bash
 	apt update -y
 	apt install iputils-ping -y   	
 	apt install net-tools -y 		
@@ -712,7 +720,7 @@ http://ip_address:7777/
 //smartcar training & inferece 환경구축 및 최종 실행행
 //원래는 이러한 순서데로 개발환경을 만들어 갔을 것입니다. 
 
-docker run -it --name SmartCar ubuntu:18.04 bash
+docker run -it --name mkbahk_SmartCar ubuntu:18.04 bash
   apt update -y
   apt install iputils-ping -y   	
   apt install net-tools -y 		
@@ -994,13 +1002,13 @@ docker service rm y5
 docker container ls
 docker container ls -a
 
-docker service create --name web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
+docker service create --name mkbahk_web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
 docker service ls
 docker container ls   //모든 호스트에서 쳐보세요.
 
 http://192.168.56.202:8380
 
-docker service scale web=12
+docker service scale mkbahk_web=12
 
 docker rm -f $(docker ps -q -aq)  
 
@@ -1154,7 +1162,7 @@ iptables -L
 iptables -F 
 
 //문제가 있는 경우 아래와 같은 메세지 출력
-root@srv162:/var/lib/docker/containers# docker run -d -it -p 8484:80 --name mkbahk-nginx nginx:latest
+root@srv162:/var/lib/docker/containers# docker run -d -it -p 8484:80 --name mkbahk_nginx nginx:latest
 7fd353671ba4721216ec1512152b38b2e773a359c88c26247565664fe5421340
 docker: Error response from daemon: driver failed programming external connectivity on endpoint mkbahk-nginx (b8a1ca53f0ad48fa8b62408cfe705c93387cd63d0279529a5dba1110f40da17e):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 80 -j ACCEPT: iptables: No chain/target/match by that name.
  (exit status 1)).

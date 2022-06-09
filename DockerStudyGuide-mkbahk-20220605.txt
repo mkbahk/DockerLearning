@@ -532,7 +532,32 @@ docker container run -it -v nfsvol:/mnt/nvfvol --name mkbahk_ubuntu01 ubuntu:18.
 	ls -al
 
 //기타 Advanced Topic
-docker container run -d -v /webdata:/var/www/html:ro httpd:latest
+docker container run -d -p 8280:80 -v /webdata:/usr/local/apache2/htdocs:ro --name mkbahk_web8280 httpd:latest
+
+docker container run -d -p 8280:80 -v /usr/local/apache2/htdocs --name mkbahk_web8280 httpd:latest
+
+docker inspect mkbahk_web8280
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "9129131b058b6568acfeab6293315929dd34f6bb86408e0737409d206dcd12ab",
+                "Source": "/var/lib/docker/volumes/9129131b058b6568acfeab6293315929dd34f6bb86408e0737409d206dcd12ab/_data",
+                "Destination": "/usr/local/apache2/htdocs",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+
+//아래 volume은 지우지 않아요. 지우려면 docker volume prune -->주의, 주의, 경고,...
+root@srv161:/var/lib/docker/volumes# docker system prune -a
+WARNING! This will remove:
+  - all stopped containers
+  - all networks not used by at least one container
+  - all images without at least one container associated to them
+  - all build cache
+
+Are you sure you want to continue? [y/N]
 
 
 //단일 호스트에서 콘테이너간 파일 공유 예)

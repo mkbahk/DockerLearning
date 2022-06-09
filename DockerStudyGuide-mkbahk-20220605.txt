@@ -271,6 +271,8 @@ docker container run -d --device-write-bps /dev/vda:1mb ubuntu:18.04 /bin/bash
 
 docker container stats [Container_Name]
 
+//전체 시스템 관리자가 모니터링하는 명령
+docker stats //수행중인 모든 컨테이너들의 각각 자원사용량 표시
 docker events
 
 

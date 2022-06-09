@@ -1,0 +1,17 @@
+cat df.sh
+
+#!/bin/bash
+mkdir -p /webdata
+while true
+do
+    df -h / > /webdata/index.html
+    sleep 5
+done
+
+
+
+cat Dockerfile
+FROM ubuntu:18.04
+ADD df.sh /bin/df.sh
+RUN chmod +x /bin/df.sh
+ENTRYPOINT ["/bin/df.sh"]

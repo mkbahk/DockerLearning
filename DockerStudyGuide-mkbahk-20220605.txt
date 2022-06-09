@@ -698,6 +698,12 @@ docker network disconnect bridge ubuntu03
 //ubuntu03 창에서
 ifconfig
 
+//특정 도커에 static IP 설정 방법
+
+docker network create --driver bridge --subnet 192.168.255.0/24 --gateway 192.168.255.254 hello-world.net
+docker run -d --name mkbahk-nginx-web --network hello-world.net --ip 192.168.255.200 -p 8384:80 nginx:latest
+
+
 =====================================================================================
 Dockerfile
 =====================================================================================
@@ -1181,6 +1187,7 @@ Docker and IPTables
 =====================================================================================
 //Docker는 기본적으로 iptables 기능을 통해 host외부로 통신
 //iptable은 L-3 Routing, NAT(Network Address Translation), Firewall 역할을 수행
+//모든 도커 설정이 이상이 없는데, 이상하게 않될 경우는 iptables의 테이블을 reset해 본다.
 
 iptables -L
 
@@ -1266,6 +1273,16 @@ Chain f2b-sshd (0 references)
 target     prot opt source               destination
 root@srv162:~#
 
+
+// iptables 확인
+docker container run -d -p 8090:80 --name mkbahk-web nginx:1.14
+docker container ls
+iptables -t nat -L -n -v
+
+Chain DOCKER (2 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 RETURN     all  --  docker0 *       0.0.0.0/0            0.0.0.0/0
+    0     0 DNAT       tcp  --  !docker0 *       0.0.0.0/0            0.0.0.0/0            tcp dpt:8383 to:172.17.0.2:80
 
 =====================================================================================
                                 End of Documents

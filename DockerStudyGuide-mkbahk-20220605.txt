@@ -91,9 +91,10 @@ docker container ls (== docker container ps, docker ps),
 docker container ls -a
 docker volume ls
 docker network ls
-
 docker container logs
 docker container inspect
+docker container inspect --format '{{.NetworkSettings.IPAddress}}' webserver
+
 
 docker image rm(==docker rmi) //image 삭제
 docker container rm (==docker rm)  //container 삭제
@@ -145,12 +146,14 @@ Use "kubectl options" for a list of global command-line options (applies to all 
 2. Service(Daemon): docker, docker-compose, docker-swarm이 제공
 3. Schedule job: kubernetes가 위 1, 2 + 제공
 
+
 =====================================================================================
-Docker 기초 명령어
+[실습 하지마세요] Docker 기초 명령어
 =====================================================================================
 docker pull kapacitor // docker hub에서 이미지 다운로드
 
-//docker container run은 docker image(Public Registry==dockerhub, Private registry(NEXUS,...), Local(host)Registry)의 이미지를 다운/또는 수행하는 명령(docker pull + run)
+//docker container run은 docker image(Public Registry==dockerhub, Private registry(NEXUS,...), Local(host) Registry)의 이미지를 다운/또는 수행하는 명령(docker pull + run)
+//원래는 docker pull-->create-->start 세가지 명령을 동시에 수행함
 
 docker  container run -it [id] /bin/bash   //새로 image를 수행시키고 콘솔에 접속함, exit로 빠져나오면 docker가 죽움, Ctrl+p, Ctrl+q 로 나오면 살려두고 운영체제로 빠져나올수있음다시접속하려면 docker attach명령 사용
 
@@ -158,7 +161,8 @@ docker  container run -d -p 8888:8888 kapacitor //데몬으로 기동시킬 때
 docker  container exec kapacitor cat /etc/kapacitor/kapacitor.conf  //기 수행 중인 도커를 콘솔을 접속하지 않고 독커내 특정 명령어 수행
 docker  container exec -it kapacktor bash   // 기 수행중인 도커의 콘솔을 연결하고자 할 때
 
-docker  container run ubuntu:16.04.  //실행하고 붙임
+docker  container run ubuntu:16.04  
+//실행하고 bash를 수행해 터미널에 연결함
 docker  container run -it ubuntu:16.04 /bin/bash
 
 기 수행 중인 도커에 특정한 명령을 수행
@@ -171,6 +175,11 @@ docker  container attach [이름 또는 ID]  //여기서 exit하면 종료되므
 //데몬으로 기동
 docker  container run -d --name ubuntu_test ubuntu /bin/bash -c "while true; do echo "still live"; sleep 100; done"
 docker  container exec -it eb3b9e69b18d /bin/bash
+
+docker container run -it -d -p 8381:80 nginx:latest 
+//container내부에서 오픈하고 있는 모든 포트를 host의 임의의 포토로 자동 열어 줌, 대문자 "-P" 옵션
+docker container run -it -d -P nginx:latest
+
 
 //로컬 디렉토리 마운팅
 docker  container run -it -v c:\/home/workspace ubuntu:18.04
@@ -198,6 +207,10 @@ docker  container ps
 docker  container logs ${WORDPRESS_CONTAINER_ID}
 docker  container logs --tail 10 ${WORDPRESS_CONTAINER_ID}
 docker  container logs -f ${WORDPRESS_CONTAINER_ID}
+docker  container inspect ...
+
+docker image ls
+docker image ls --no-trunc
 
 =====================================================================================
 Docker 기초 실습
@@ -246,6 +259,20 @@ docker container run -it e9e99be2481c bash	//???
 +docker exec -it e9e99be2481c bash bash 	//???
 +docker start e9e99be2481c
 docker exec e9e99be2481c ping 8.8.8.8
+
+
+=====================================================================================
+Docker container 리소스 제한
+=====================================================================================
+
+docker container run -d -m 512m nginx:latest
+docker container run -d --cpus="0.5" nginx:latest
+docker container run -d --device-write-bps /dev/vda:1mb ubuntu:18.04 /bin/bash
+
+docker container stats [Container_Name]
+
+docker events
+
 
 =====================================================================================
 Docker Snapshot, Backup & Restore
@@ -1111,3 +1138,97 @@ docker service update --image mkbahk/nginxscale:${BUILD_NUMBER} web-app
 kubectl set image -f nginx-scale.yml app=mkbahk/nginxscale:${BUILD_NUMBER}
 
 
+=====================================================================================
+Docker and IPTables
+=====================================================================================
+//Docker는 기본적으로 iptables 기능을 통해 host외부로 통신
+//iptable은 L-3 Routing, NAT(Network Address Translation), Firewall 역할을 수행
+
+iptables -L
+
+iptables -F 
+
+//문제가 있는 경우 아래와 같은 메세지 출력
+root@srv162:/var/lib/docker/containers# docker run -d -it -p 8484:80 --name mkbahk-nginx nginx:latest
+7fd353671ba4721216ec1512152b38b2e773a359c88c26247565664fe5421340
+docker: Error response from daemon: driver failed programming external connectivity on endpoint mkbahk-nginx (b8a1ca53f0ad48fa8b62408cfe705c93387cd63d0279529a5dba1110f40da17e):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 80 -j ACCEPT: iptables: No chain/target/match by that name.
+ (exit status 1)).
+
+
+ //해결방법
+systemctl restart docker 
+
+iptables -L
+
+root@srv162:~# iptables -F
+
+root@srv162:~# iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain DOCKER (0 references)
+target     prot opt source               destination
+
+Chain DOCKER-ISOLATION-STAGE-1 (0 references)
+target     prot opt source               destination
+
+Chain DOCKER-ISOLATION-STAGE-2 (0 references)
+target     prot opt source               destination
+
+Chain DOCKER-USER (0 references)
+target     prot opt source               destination
+
+Chain f2b-sshd (0 references)
+target     prot opt source               destination
+
+
+root@srv162:~# systemctl restart docker
+
+
+root@srv162:~# iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+DOCKER-USER  all  --  anywhere             anywhere
+DOCKER-ISOLATION-STAGE-1  all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+DOCKER     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain DOCKER (1 references)
+target     prot opt source               destination
+
+Chain DOCKER-ISOLATION-STAGE-1 (1 references)
+target     prot opt source               destination
+DOCKER-ISOLATION-STAGE-2  all  --  anywhere             anywhere
+RETURN     all  --  anywhere             anywhere
+
+Chain DOCKER-ISOLATION-STAGE-2 (1 references)
+target     prot opt source               destination
+DROP       all  --  anywhere             anywhere
+RETURN     all  --  anywhere             anywhere
+
+Chain DOCKER-USER (1 references)
+target     prot opt source               destination
+RETURN     all  --  anywhere             anywhere
+
+Chain f2b-sshd (0 references)
+target     prot opt source               destination
+root@srv162:~#
+
+
+=====================================================================================
+                                End of Documents
+=====================================================================================

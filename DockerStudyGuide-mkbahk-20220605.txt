@@ -275,6 +275,9 @@ docker container stats [Container_Name]
 docker stats //수행중인 모든 컨테이너들의 각각 자원사용량 표시
 docker events
 
+//web gui로 리소스 모니터링
+https://github.com/google/cadvisor
+
 
 =====================================================================================
 Docker Snapshot, Backup & Restore

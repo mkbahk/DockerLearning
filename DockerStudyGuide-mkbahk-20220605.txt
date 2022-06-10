@@ -104,11 +104,11 @@ docker volume rm
 docker network rm
 
 //실행 중인 컨테이너들에게 영향을 주지 않음
-docker image prune
-docker container prune
+docker image prune  //docker image rm -f $(docker image ls -aq)
+docker container prune  // docker container rm -f $(docker container ls -aq)
 docker volume prune
 docker network prune
-docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 멤버유지
+docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 volume은 지원지지 않음
 
 =====================================================================================
 Docker & Kubectl 명령어 연관성
@@ -214,6 +214,8 @@ docker  container inspect ...
 
 docker image ls
 docker image ls --no-trunc
+
+
 
 =====================================================================================
 Docker 기초 실습
@@ -702,6 +704,15 @@ ifconfig
 
 docker network create --driver bridge --subnet 192.168.255.0/24 --gateway 192.168.255.254 hello-world.net
 docker run -d --name mkbahk-nginx-web --network hello-world.net --ip 192.168.255.200 -p 8384:80 nginx:latest
+
+
+//컨터이너와 외부서비스를 위한 포트 매칭 및 Port-Forwarding 3가지 방법
+docker container run --name nginx1 -d -p 8080:80 nginx:latest
+docker container run --name nginx1 -d -p 80 nginx:latest //호스트의 사용하지 않는 램덤포트를 콘테이너 내부 80퐅에 매핑
+docker container run --name nginx1 -d -P nginx:latest  //콘테이너 내부의 모든 포트를 호스트의 임의의 포트로 매핑
+
+docker container run --name nginx1 -d -p 8080:80 -p 5050:5000 nginx:latest
+docker container run --name nginx1 -d -p 8080-8089:80 nginx:latest //8080~8090 중 하나를 내부 80포트에 매핑
 
 
 =====================================================================================

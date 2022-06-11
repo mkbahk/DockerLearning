@@ -811,8 +811,6 @@ ls -al
 
 cat Dockerfile
 
-  GNU nano 2.9.3                                                                     Dockerfile
-
 #docker build . -t mkbahk/smartcar:0.1
 FROM ubuntu:18.04
 EXPOSE 9002
@@ -870,7 +868,7 @@ http://ip_address:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&ac
 
 
 =====================================================================================
-Docker-compose
+Docker-compose: 컨테이너 정의
 =====================================================================================
 //docker-compose 설치
 sudo curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
@@ -1020,6 +1018,8 @@ j0a4fe3pauhsh485j9rqizznm     worker203           Ready               Active    
 ma3svopcv53k52mv5so4y4qen     worker204           Ready               Active                                  19.03.8
 root@master202:~#
 
+
+//scale 실습
 git clone https://github.com/mkbahk/nginxscale
 cd nginxscale
 docker build . -t mkbahk/nginxscale:1.0
@@ -1044,6 +1044,13 @@ docker service rm y5
 docker container ls
 docker container ls -a
 
+//서비스에 소속된 컨테이너 삭제 테스트
+3개 워커 중 하나의 워커에서 docker stop 명령으로 강제로 삭제 후 다시 서비스가 살아나는 것을 확인
+docker container sotp ...
+docker container ls
+
+
+
 docker service create --name mkbahk_web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
 docker service ls
 docker container ls   //모든 호스트에서 쳐보세요.
@@ -1051,8 +1058,67 @@ docker container ls   //모든 호스트에서 쳐보세요.
 http://192.168.56.202:8380
 
 docker service scale mkbahk_web=12
+docker service rm mkbahk_web
 
 docker rm -f $(docker ps -q -aq)  
+
+
+=====================================================================================
+Docker stack : 서비스 정의
+=====================================================================================
+//docker-compose vs. docker stack
+docker-compose는 container를 정의하는 것이고, docker stack는 service를 정의하는 것이다.
+
+service라는 개념은 docker version 1.12 이후 도입된 개념이다.
+
+docker-compose는 컨테이너를 정의하는 것이기 때문에, docker-compose 명령이 실행되는 순간에만 컨테이너의 상태가 올바른지 확인 후, 컨테이너가 켜져 있지 않으면 컨테이너를 실행시키고 docker-compose의 몫은 끝난다.
+docker-compose는 상태를 지속적으로 모니터링 하지 않기 때문에 만약 컨테이너가 5분안에 예기치 않게 종료 되면, compose는 컨테이너를 다시 시작하지 못한다.
+
+하지만 docker stack은 docker 엔진의 원하는 서비스 상태를 항상 알수 있으며, 그렇기 때문에 엔진이 원하는 서비스 상태와 지금 서비스 상태가 다르다면 조치도 가능하다
+
+예를 들어 컨테이너가 죽으면 다른 컨테이너를 호출 하거나, 전체노드에서 컨테이너를 몇개 가져가면 엔진을 감지하여 컨테이너를 정상적인 노드로 다시 가져올 수 있다. 즉, docker stack은 docker-compose에서 지원하지 않는 모니터링과 그에 따른 조치 기능을 제공하는 것이 큰 차이점이다. 
+
+git clone https://github.com/mkbahk/DockerLearning
+cd DockerLearning/prj-docstack-nginx-scale
+
+cat docker-compose.yaml
+
+version : "3"
+services:
+   stackweb:
+      image: "nginx:latest"
+      deploy:
+         replicas: 5
+         restart_policy:
+            condition: on-failure
+         resources:
+           limits:
+             cpus: "0.1"
+             memory: 50M
+      ports:
+         - "8180:80"
+      networks:
+         - nginx-net
+networks:
+   nginx-net:
+
+# docker stack deploy -c docker-compose.yaml nginxstack
+
+
+docker stack deploy -c docker-compose.yaml nginxstack
+
+docker stack ls
+docker container ls //모든 swarm worker들에서 확인해 보세요.
+
+//워커들 중 서비스가 떠 있는 곳에서
+docker container stop ... //명령으로 1~2개 강제로 stop시킨 후 서비스 복구를 확인하세요.
+docker stack services nginxstack
+docker container ls
+
+//docker stack은 docker service 명령을 .yaml로 바꾼형태입니다. 결국 이 .yaml 파일이 kubernetes에서 메인으로 사용하게 됩니다.
+
+docker stack ls
+docker stack rm nginxstack
 
 
 =====================================================================================

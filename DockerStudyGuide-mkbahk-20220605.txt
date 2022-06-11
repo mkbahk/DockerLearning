@@ -1277,12 +1277,14 @@ docker: Error response from daemon: driver failed programming external connectiv
  (exit status 1)).
 
 
+
+root@srv162:~# iptables -F
+
  //해결방법
 systemctl restart docker 
 
 iptables -L
 
-root@srv162:~# iptables -F
 
 root@srv162:~# iptables -L
 Chain INPUT (policy ACCEPT)

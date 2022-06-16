@@ -1030,6 +1030,8 @@ mkbahk/nginxscale   1.0                 95648d2afd8a        About a minute ago  
 
 
 docker service create --name web --publish 8380:80 --mode global mkbahk/nginxscale:1.0
+//주로 호스트 로그수집기, 모니터링 에이전트와 같은 프로그램 실행 시 적용
+
 
 root@master202:~# docker service ls
 ID                  NAME                MODE                REPLICAS            IMAGE                   PORTS

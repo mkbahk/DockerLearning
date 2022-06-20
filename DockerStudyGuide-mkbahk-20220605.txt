@@ -566,6 +566,10 @@ Are you sure you want to continue? [y/N]
 docker run -v /wwwdocs:/wwwdocs -d -p 8081:8080 --name mbkahk_wwwdev mkbahk/tensorflow:code-server-8080 code-server
 docker run -v /wwwdocs:/usr/local/apache2/htdocs:ro -d -p 8082:80 --name mkbahk_wwwprod httpd:latest
 
+docker run -it -d -v /root/webdata:/usr/share/nginx/html mkbahk/ubuntu-genhtml:latest
+docker run -it -d -v /root/webdata:/usr/share/nginx/html -p 8780:80 nginx:latest
+
+
 =====================================================================================
 docker container에 특정 Device 마운트
 =====================================================================================

@@ -1072,6 +1072,11 @@ CI/CD 중 CI->Jenkins, CD-Kubernetes, Jenkins를 이용한 CI 구현
 
 docker run -u root -d -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
 
+http://srv161:8282/
+Username: admin
+Password: admin
+
+
 docker run -u root  -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /run/docker.sock:/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
 
 a6bbdb247ef2433c8dec708aeb3ee95c

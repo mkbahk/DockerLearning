@@ -26,7 +26,7 @@ docker container run [OPTIONS] IMAGE[:TAG|@DIGEST] [COMMAND] [ARG...]
 
 엄청나게 직관적인 옵션으로 몇번 실행해보면 자연스럽게 익숙해집니다.
 
-//kubernetes == docker + Dockerfile + docker-compose + docker swarm + Plus alpha
+//kubernetes == docker + Dockerfile + docker-compose + Docker Stack + docker swarm + CNI/CSI Plus alpha
 
 =====================================================================================
 설치상태 확인
@@ -82,6 +82,11 @@ mkbahk@srv161:~$ sudo systemctl status docker*
            ├─41779 /usr/bin/dockerd
            └─47091 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8989 -container-ip 172.17.0.3 -container-port 80
 
+//모든 것들이 정상적으로 수행중이면
+
+docker run -it hellow-world:latest
+
+
 =====================================================================================
 Docker 핵심명령어
 =====================================================================================
@@ -89,14 +94,15 @@ docker image pull/push
 docker image ls (== docker images)
 docker container ls (== docker container ps, docker ps), 
 docker container ls -a
-docker volume ls
-docker network ls
 docker container logs
 docker container inspect
 docker container inspect --format '{{.NetworkSettings.IPAddress}}' webserver
+docker volume ls
+docker network ls
+
 
 docker container attach [container_name]  //콘솔에 접속함. 주의 "exit"하면 daemon 도 죽음, Ctrl-P,Q로 나와야 함. 
-docker container exec -it [container_name] bash  //새로운 터미널을 여는 것임. exit 명령으로 나와도 daemon 상태일때는 죽지 않음.
+docker container exec -it [container_name] [컨터이너_내부명령어]  //ex) /bin/bash 등 shell 수행시 새로운 터미널을 여는 것임. exit 명령으로 나와도 daemon 상태일때는 죽지 않음.
 
 docker image rm(==docker rmi) //image 삭제
 docker container rm (==docker rm)  //container 삭제
@@ -108,7 +114,7 @@ docker image prune  //docker image rm -f $(docker image ls -aq)
 docker container prune  // docker container rm -f $(docker container ls -aq)
 docker volume prune
 docker network prune
-docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 volume은 지원지지 않음
+docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 특히, 특이하게 "volume"은 지원지지 않음
 
 =====================================================================================
 Docker & Kubectl 명령어 연관성
@@ -149,80 +155,12 @@ Use "kubectl options" for a list of global command-line options (applies to all 
 2. Service(Daemon): docker, docker-compose, docker-swarm이 제공
 3. Schedule job: kubernetes가 위 1, 2 + 제공
 
-
-=====================================================================================
-[실습 하지마세요] Docker 기초 명령어
-=====================================================================================
-docker pull kapacitor // docker hub에서 이미지 다운로드
-
-//docker container run은 docker image(Public Registry==dockerhub, Private registry(NEXUS,...), Local(host) Registry)의 이미지를 다운/또는 수행하는 명령(docker pull + run)
-//원래는 docker pull-->create-->start 세가지 명령을 동시에 수행함
-
-docker  container run -it [id] /bin/bash   //새로 image를 수행시키고 콘솔에 접속함, exit로 빠져나오면 docker가 죽움, Ctrl+p, Ctrl+q 로 나오면 살려두고 운영체제로 빠져나올수있음다시접속하려면 docker attach명령 사용
-
-docker  container run -d -p 8888:8888 kapacitor //데몬으로 기동시킬 때
-docker  container exec kapacitor cat /etc/kapacitor/kapacitor.conf  //기 수행 중인 도커를 콘솔을 접속하지 않고 독커내 특정 명령어 수행
-docker  container exec -it kapacktor bash   // 기 수행중인 도커의 콘솔을 연결하고자 할 때
-
-docker  container run ubuntu:16.04  
-//실행하고 bash를 수행해 터미널에 연결함
-docker  container run -it ubuntu:16.04 /bin/bash
-
-기 수행 중인 도커에 특정한 명령을 수행
-docker  container exec [OPTIONS] CONTAINER COMMAND [ARG...]
-docker  container exec -it mysql /bin/bash
-
-docker  container start [이름]  //수행중이지 않고, docker ps -a로 저장된 docker를 실행하고 콘솔연결하지 않음
-docker  container attach [이름 또는 ID]  //여기서 exit하면 종료되므로 Ctrl-p, Ctrl+q로 나오면 살아있음
-
-//데몬으로 기동
-docker  container run -d --name mkbahk_ubuntu ubuntu /bin/bash -c "while true; do echo "still live"; sleep 100; done"
-docker  container exec -it eb3b9e69b18d /bin/bash
-
-docker container run -it -d -p 8381:80 nginx:latest 
-//container내부에서 오픈하고 있는 모든 포트를 host의 임의의 포토로 자동 열어 줌, 대문자 "-P" 옵션
-docker container run -it -d -P nginx:latest
-
-
-//로컬 디렉토리 마운팅
-docker  container run -it -v c:\/home/workspace ubuntu:18.04
-
-docker  container run --rm -it ubuntu:16.04 /bin/bash
-docker  container run -d -p 1234:6379 redis
-docker  container ps [OPTIONS]
-
-docker  container ps -a
-docker  container stop [OPTIONS] CONTAINER [CONTAINER...]
-docker  container rm [OPTIONS] CONTAINER [CONTAINER...]
-
-docker  container rm -f $(docker ps -q -aq)  //현재 떠있는 모든 container를 강제로 한꺼번에 삭제하는 명령
-docker  container run --rm -i busybox ping -c 5 flaskapp   //busybox를 기동시켜 특정 호스트로 ping친 결과를 return
-
-docker  container rm -v $(docker ps -a -q -f status=exited)
-docker images [OPTIONS] [REPOSITORY[:TAG]]
-
-docker pull [OPTIONS] NAME[:TAG|@DIGEST]
-docker pull ubuntu:14.04
-docker image rm 
-docker rmi [OPTIONS] IMAGE [IMAGE...]  //docker image 삭제
-
-docker  container ps
-docker  container logs ${WORDPRESS_CONTAINER_ID}
-docker  container logs --tail 10 ${WORDPRESS_CONTAINER_ID}
-docker  container logs -f ${WORDPRESS_CONTAINER_ID}
-docker  container inspect ...
-
-docker image ls
-docker image ls --no-trunc
-
-
-
 =====================================================================================
 Docker 기초 실습
 =====================================================================================
 echo "Hello World" 
-docker container run  busybox echo "Hello World"
-docker container run -it ubuntu:latest each "Hello World"
+docker container run  busybox:latest echo "Hello World"
+docker container run -it ubuntu:latest echo "Hello World"
 docker container run -it ubuntu:latest cat /etc/lsb-release
 docker container run -it ubuntu:latest bash
 	cat /etc/lsb-release
@@ -261,8 +199,8 @@ e77a1c2e883e   busybox:latest    "ping 8.8.8.8"           10 minutes ago      Ex
 
 docker container run -it e9e99be2481c bash	//???
 
-+docker exec -it e9e99be2481c bash bash 	//???
-+docker start e9e99be2481c
+docker exec -it e9e99be2481c bash bash 	//???
+docker start e9e99be2481c
 docker exec e9e99be2481c ping 8.8.8.8
 
 
@@ -335,7 +273,7 @@ CONTAINER ID   IMAGE                          COMMAND                  CREATED  
 PS C:\Users\mkbah> docker stop 2a6dd1553358
 2a6dd1553358
 
-//이미지가 없으면 로컬시스템repository에서 찻고, 없으면 Local Repository, 없으면 Public Repository(dockerhub.com)에서 찾아서, 다운로드하고, 실행시키는 명령
+//이미지가 없으면 로컬시스템repository에서 찻고, 없으면 Local Private Repository, 없으면 Public Repository(dockerhub.com)에서 찾아서, 다운로드하고, 실행시키는 명령
 docker container run -it mkbahk/ubuntuwithping:latest ping 8.8.8.8
 
 =====================================================================================
@@ -810,7 +748,7 @@ http://ip_address:9002/smartcar/predict?wea=2&temp=0&hum=1&arrOthCar=2&time=0&ac
 
 cd
 git clone https://github.com/mkbahk/DockerLearning
-cd ./DockerLearning/rj-docfile-SmartCar/
+cd ./DockerLearning/prj-docfile-SmartCar/
 ls -al
 
 cat Dockerfile

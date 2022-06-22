@@ -82,27 +82,67 @@ mkbahk@srv161:~$ sudo systemctl status docker*
            ├─41779 /usr/bin/dockerd
            └─47091 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8989 -container-ip 172.17.0.3 -container-port 80
 
-//모든 것들이 정상적으로 수행중이면
+//명령어 도움말
+docker --help
+docker container --help
+docker container rm --help
 
-docker run -it hellow-world:latest
+//모든 것들이 정상적으로 수행중이면
+##Interactive Program 수행 예
+docker container run hello-world:latest  
+
+##Service/Daemon Program 기동예
+docker container run -it -d -p 80:80 --name nginxweb nginx:latest
+##browser열어서
+http://192.168.56.202/
+
+
+//Docker GUI 관리도구 설치
+docker volume create portainer_data
+docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+##접근
+https://192.168.56.202:9443
+
+UserID: admin
+Password: 12자리 이상 길게
 
 
 =====================================================================================
 Docker 핵심명령어
 =====================================================================================
+[핵심 4개 명령어-프로그램, computing, storage, Network]
+docker image
+docker container
+docker volume
+docker network 
+
 docker image pull/push
 docker image ls (== docker images)
-docker container ls (== docker container ps, docker ps), 
+docker container ls (== docker container ps, docker ps, kubectl get pods)
 docker container ls -a
-docker container logs
-docker container inspect
-docker container inspect --format '{{.NetworkSettings.IPAddress}}' webserver
-docker volume ls
+docker container logs nginxweb (kubectl logs)
+docker container inspect nginxweb (kubectl describe)
+docker container inspect --format '{{.NetworkSettings.IPAddress}}' nginxweb
+docker volume ls (kubectl get pv)
 docker network ls
 
+docker container run (kubectl run)
+docker container attach [container_name] (kubectl attach)  
+//콘솔에 접속함. 주의 "exit"하면 daemon 도 죽음, Ctrl-P,Q로 나와야 함. 
 
-docker container attach [container_name]  //콘솔에 접속함. 주의 "exit"하면 daemon 도 죽음, Ctrl-P,Q로 나와야 함. 
-docker container exec -it [container_name] [컨터이너_내부명령어]  //ex) /bin/bash 등 shell 수행시 새로운 터미널을 여는 것임. exit 명령으로 나와도 daemon 상태일때는 죽지 않음.
+docker container exec -it [container_name] [컨터이너_내부명령어]  (kubectl exec)
+//ex) /bin/bash 등 shell 수행시 새로운 터미널을 여는 것임. exit 명령으로 나와도 daemon 상태일때는 죽지 않음.
+
+docker container top nginxweb (kubectl top {node|pod})
+
+docker stop nginxweb
+docker start nginxweb
+
+//docker container 의 3가지 상태
+  1) image상태   ##docker image ls
+  2) running container상태  ##docker container ls
+  3) stopped container상태 ##docker container ls -a, 모든 설정정보도 같이 보관 중이라 start시키면 이전 상태정보로 바로 수행가능, 이 상태정보와 새로 수행되는 컨터이너의 상태정보를 중복되면 않됨
+
 
 docker image rm(==docker rmi) //image 삭제
 docker container rm (==docker rm)  //container 삭제
@@ -114,7 +154,7 @@ docker image prune  //docker image rm -f $(docker image ls -aq)
 docker container prune  // docker container rm -f $(docker container ls -aq)
 docker volume prune
 docker network prune
-docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 특히, 특이하게 "volume"은 지원지지 않음
+docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 특히, 특이하게 "volume"은 지우지 않음
 
 =====================================================================================
 Docker & Kubectl 명령어 연관성
@@ -167,7 +207,7 @@ docker container run -it ubuntu:latest bash
 	echo "Hello World"
 	exit
 
-docker container run -it centos:latest each "Hello World"
+docker container run -it centos:latest echo "Hello World"
 docker container run -it centos:latest cat /etc/centos-release
 docker container run -ti centos:latest bash
 	cat /etc/centos-release
@@ -205,18 +245,20 @@ docker exec e9e99be2481c ping 8.8.8.8
 
 
 =====================================================================================
-Docker container 리소스 제한
+Docker container 리소스 제한 및 모니터링
 =====================================================================================
 
-docker container run -d -m 512m nginx:latest
+docker container run -d -m 512m nginx:latest 
 docker container run -d --cpus="0.5" nginx:latest
-docker container run -d --device-write-bps /dev/vda:1mb ubuntu:18.04 /bin/bash
+##여러개 수행해 보세요. 내부 포트 80번은 중복되어도 문제없음
+
+docker container run -d --device-write-bps /dev/sda:1mb ubuntu:18.04 sleep 100000
 
 docker container stats [Container_Name]
 
-//전체 시스템 관리자가 모니터링하는 명령
-docker stats //수행중인 모든 컨테이너들의 각각 자원사용량 표시
-docker events
+//시스템 관리자가 상시 모니터링하는 명령
+docker stats ##수행중인 모든 컨테이너들의 각각 자원사용량 표시
+docker events ##각종 도커시스템 이벤트를 출력
 
 //web gui로 리소스 모니터링
 https://github.com/google/cadvisor
@@ -232,7 +274,7 @@ PS C:\Users\mkbah> docker container ls -a
 CONTAINER ID   IMAGE                          COMMAND                  CREATED             STATUS                      PORTS                     NAMES
 633a6c56dbc5   mkbahk/ubuntuwithping:latest   "ping 8.8.8.8"           21 seconds ago      Exited (0) 16 seconds ago                             inspiring_volhard
 
-docker system prune -a
+docker container prune
 
 docker load -i .\ubuntuwithping.docker.image
 docker container run -it mkbahk/ubuntuwithping:latest ping 8.8.8.8
@@ -248,16 +290,28 @@ postgres                latest    5b21e2e86aab   6 days ago       376MB
 
 docker rmi mkbahk/ubuntuwithping:latest
 
+//export/import: container 저장, save/load: image저장
 Docker export --> docker import
+  docker export nginxweb > nginxweb.tar
+  docker import nginxweb.tar
+
 Docker save --> docker load
+  ##수행/Stopped 컨테이너는 반드시 commit 후 save/load
+  docker commit
+  docker save
+  docker load
+
+//참고: docker image 파일을 가지고 다니는 것 보다는 Dockerfile, compose, stack등 script형태로 지참, 전달하는 것이 바람직
 
 =====================================================================================
 Public Registry 에 등록 push/pull
 =====================================================================================
-docker tag mkbahk/ubuntuwithping:latest docker.io/mkbahk/ubuntuwithping:1.9
-docker login   //dockerhub.com 에 로그인해야 함.
+docker tag mkbahk/ubuntuwithping:latest {public:docker.io | private:IP_Address}/mkbahk/ubuntuwithping:1.9
+docker login   ##dockerhub.com 에 로그인해야 함.
 docker push mkbahk/ubuntuwithping:latest
-//dockerhub.com 의 자신의 ID에서 리스트 확인
+
+##dockerhub.com 의 자신의 ID에서 리스트 확인
+
 docker pull mkbahk/ubuntuwithping:latest
 docker container run -it mkbahk/ubuntuwithping:latest ping 8.8.8.8
 Ctrl-c
@@ -281,7 +335,7 @@ Docker상에 S/W 개발환경 구성
 =====================================================================================
 //python, tensorflow, jypyter notebook 설치
 docker run -it --rm -v $(realpath ~/notebooks):/tf/notebooks -p 8888:8888 tensorflow/tensorflow:latest-jupyter
-//처음부터 daemon으로 띄우지 마세요. 콘솔메세지 보면 초기 아래와 같이 Token값이 표시되고 이용해 새로운 패스워크 입력이 가능합니다.
+##처음부터 daemon으로 띄우지 마세요. 콘솔메세지 보면 초기 아래와 같이 Token값이 표시되고 이용해 새로운 패스워크 입력이 가능합니다.
 
 
     To access the notebook, open this file in a browser:
@@ -290,6 +344,12 @@ docker run -it --rm -v $(realpath ~/notebooks):/tf/notebooks -p 8888:8888 tensor
         http://06fc6c252964:8888/?token=07ba6372a9711bcf4688138b7f25b1e4c13c3b5008ac5e3c
      or http://127.0.0.1:8888/?token=07ba6372a9711bcf4688138b7f25b1e4c13c3b5008ac5e3c
 
+##접근
+http://192.168.56.202:8888/?token=07ba6372a9711bcf4688138b7f25b1e4c13c3b5008ac5e3c
+
+
+//이제부터는 메모리부족 현상 나오니 자주 "docker system prune -a"로 불필용한 자원 삭제합니다.
+
 
 //python, tensorflow, Visual Studio Code환경
 docker run -it tensorflow/tensorflow:latest bash
@@ -297,15 +357,8 @@ docker run -it tensorflow/tensorflow:latest bash
 apt install nano wget git -y
 curl -fsSL https://code-server.dev/install.sh | sh
 
-root@d563f39ea80d:~# code-server
-[2022-06-08T09:31:55.535Z] info  Wrote default config file to ~/.config/code-server/config.yaml
-[2022-06-08T09:31:55.839Z] info  code-server 4.4.0 b088ec7adf9e17bc75215f79e21498eb40da03ed
-[2022-06-08T09:31:55.839Z] info  Using user-data-dir ~/.local/share/code-server
-[2022-06-08T09:31:55.848Z] info  Using config file ~/.config/code-server/config.yaml
-[2022-06-08T09:31:55.848Z] info  HTTP server listening on http://127.0.0.1:8080/
-[2022-06-08T09:31:55.848Z] info    - Authentication is enabled
-[2022-06-08T09:31:55.848Z] info      - Using password from ~/.config/code-server/config.yaml
-[2022-06-08T09:31:55.848Z] info    - Not serving HTTPS
+cd
+code-server  ##일단 한번 기동시켜 기본 설정파일을 얻습니다.
 
 cd .config/code-server
 ls -al
@@ -332,52 +385,72 @@ root@d563f39ea80d:~# code-server
 [2022-06-08T09:35:51.038Z] info      - Using password from ~/.config/code-server/config.yaml
 [2022-06-08T09:35:51.038Z] info    - Not serving HTTPS
 
+Ctrl+C or Exit
 
 docker container ls -a
-
 mkbahk@srv161:~$ docker container ls -a
 CONTAINER ID   IMAGE                                COMMAND                  CREATED             STATUS                      PORTS                                                  NAMES
 d563f39ea80d   tensorflow/tensorflow:latest         "bash"                   6 minutes ago       Exited (0) 6 seconds ago                                                           interesting_mcnulty
 
+
+
 docker commit d563f39ea80d mkbahk/tensorflow:code-server-8080
 
-docker run -it -p 8989:8080 mkbahk/tensorflow:code-server-8080 code-server
+docker run -it -p 8080:8080 mkbahk/tensorflow:code-server-8080 code-server
 
 
 //postgresql 설치
 
-docker container run -d -p 54320:5432 -e POSTGRES_PASSWORD=posgrespw --name mkbahk_postgres postgres:latest 
-psql -h localhost -U postgres -w
+docker container run -d -p 5432:5432 -e POSTGRES_PASSWORD=posgrespw --name postgres postgres:latest
+docker container exec -it postgres /bin/bash
+  psql -h localhost -U postgres -w
+  select version();
+
 
 외부에서 DBeaver를 통해서 접속합니다.
-Connection String: postgres://postgres:postgrespw@localhost:49153
+Connection String: postgres://postgres:postgrespw@192.168.56.202:5432
 
-CREATE TABLE public.HelloTable (
-	id 		int PRIMARY KEY NOT NULL,
-	name	text NOT NULL,
-	age		int NOT NULL,
-	address char(50),
-	salary	REAL
-);
+  CREATE TABLE public.HelloTable (
+    id 		int PRIMARY KEY NOT NULL,
+    name	text NOT NULL,
+    age		int NOT NULL,
+    address char(50),
+    salary	REAL
+  );
 
-select * from public.HelloTable;
+  select * from public.HelloTable;
 
-insert into public.HelloTable (id, name, age ) values 
-	(3, 'Bahk, Sang-Bong', 80),
-	(2, 'Bahk, Kee-Berm', 20),
-	(1, 'Bahk, Moon-Kee', 50);
+  insert into public.HelloTable (id, name, age ) values 
+    (3, 'Bahk, Sang-Bong', 80),
+    (2, 'Bahk, Kee-Berm', 20),
+    (1, 'Bahk, Moon-Kee', 50);
 
-select * from public.HelloTable;
+  select * from public.HelloTable;
 
-drop table public.HelloTable;
+  drop table public.HelloTable;
 
 //zeppelin
-docker container run -d -p 8787:8080 --link postgres:postgres --name mkbahk_zeppelin zeppelin:0.10.1
+docker container run -d -p 8080:8080 --link postgres:postgres --name zeppelin apache/zeppelin:0.10.1
  
+docker exec -it zeppelin /bin/bash
+  cd /var/lib/postgresql/data#
+
+nano pg_hba.conf
+  #md5 --> trust
+  host    all             all             all                     trust 
+  #
+
+##zeppelin jdbc interpreters 설정변경
+  Properties
+  Name	Value	Description
+  default.url	jdbc:postgresql://172.17.0.4:5432/postgres	The URL for JDBC.
+  default.user	postgres	The JDBC user name
+  default.password	***	The JDBC user password
 
 
-//mysql 설치 및 서비스 수행, 암호없이 접속 + wordpress 설치 및 mysql와 연결
-docker container run -p 3306(바깥쪽):3306(안쪽) --name mkbahk_mysql -d mysql:
+
+//mysql 설치 및 서비스 수행, 암호없이 접속 + wordpress 설치 및 mysql와 연결 / -p 3306(호스트):3306(도커내부)
+docker container run -d -p 3306:3306 --name mysql -d mysql:latest
 docker container ps
 
 PS C:\Users\mkbah> docker container ls
@@ -388,7 +461,7 @@ PS C:\Users\mkbah>
 
 docker logs c9eff902ddbb
 
-docker container run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true --name mbkahk_mysql mysql:latest
+docker container run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true --name mysql mysql:latest
 docker exec -it mysql bash
 	mysql -u root -p
 	Enter  //password가 없습니다.
@@ -404,7 +477,7 @@ docker container run -d --name mkahk_mysql -v mysql:/var/lib/mysql -e MYSQL_ROOT
 
 
 //wordpress 설치 및 mysql 연결
-docker container run -d --name mkbahk_wordpress --link mysql:mysql -v wordpress:/var/www/html -e WORDPRESS_DB_HOST=mysql:3306 -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -p 8989:80 wordpress:latest
+docker container run -d --name wordpress --link mysql:mysql -v wordpress:/var/www/html -e WORDPRESS_DB_HOST=mysql:3306 -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -p 8989:80 wordpress:latest
 
 =====================================================================================
 Docker Container와 Host간의 파일 교환
@@ -446,12 +519,12 @@ drwxr-xr-x  3 root root  4096  6월  4 14:42 mysql
 drwxrwxrwx  3 root root  4096  6월  4 18:39 pgdata
 drwxr-xr-x  3 root root  4096  6월  4 14:44 wordpress
 
-docker container run -it -v hostvol:/mnt/hostvol --name mkbahk_ubuntu00 ubuntu:18.04 bash
+docker container run -it -v hostvol:/mnt/hostvol --name ubuntu00 ubuntu:18.04 bash
 	cd /mnt/hostvol
 	echo "Created by ubuntu00" >> ubuntu00.txt
 	ls -al
 	
-docker container run -it -v hostvol:/mnt/hostvol --name mkbahk_ubuntu01 ubuntu:18.04 bash
+docker container run -it -v hostvol:/mnt/hostvol --name ubuntu01 ubuntu:18.04 bash
 	cd /mnt/hostvol
 	echo "Created by ubuntu01" >> ubuntu01.txt
 	ls -al
@@ -461,22 +534,22 @@ docker volume create --driver local --opt type=nfs --opt o=addr=218.145.56.74,rw
 docker volume ls
 docker volume inspect nfsvol
 
-docker container run -it -v nvfvol:/mnt/nfsvol --name mkbahk_ubuntu00 ubuntu:18.04 bash
+docker container run -it -v nvfvol:/mnt/nfsvol --name ubuntu00 ubuntu:18.04 bash
 	cd /mnt/nfsvol
 	echo "Created by ubuntu00" >> ubuntu00-nfs.txt
 	ls -al
 	
-docker container run -it -v nfsvol:/mnt/nvfvol --name mkbahk_ubuntu01 ubuntu:18.04 bash
+docker container run -it -v nfsvol:/mnt/nvfvol --name ubuntu01 ubuntu:18.04 bash
 	cd /mnt/nfsvol
 	echo "Created by ubuntu01" >> ubuntu01-nfs.txt
 	ls -al
 
 //기타 Advanced Topic
-docker container run -d -p 8280:80 -v /webdata:/usr/local/apache2/htdocs:ro --name mkbahk_web8280 httpd:latest
+docker container run -d -p 8280:80 -v /webdata:/usr/local/apache2/htdocs:ro --name web8280 httpd:latest
 
-docker container run -d -p 8280:80 -v /usr/local/apache2/htdocs --name mkbahk_web8280 httpd:latest
+docker container run -d -p 8280:80 -v /usr/local/apache2/htdocs --name web8280 httpd:latest
 
-docker inspect mkbahk_web8280
+docker inspect web8280
         "Mounts": [
             {
                 "Type": "volume",
@@ -502,7 +575,7 @@ Are you sure you want to continue? [y/N]
 
 //단일 호스트에서 콘테이너간 파일 공유 예)
 docker run -v /wwwdocs:/wwwdocs -d -p 8081:8080 --name mbkahk_wwwdev mkbahk/tensorflow:code-server-8080 code-server
-docker run -v /wwwdocs:/usr/local/apache2/htdocs:ro -d -p 8082:80 --name mkbahk_wwwprod httpd:latest
+docker run -v /wwwdocs:/usr/local/apache2/htdocs:ro -d -p 8082:80 --name wwwprod httpd:latest
 
 docker run -it -d -v /root/webdata:/usr/share/nginx/html mkbahk/ubuntu-genhtml:latest
 docker run -it -d -v /root/webdata:/usr/share/nginx/html -p 8780:80 nginx:latest
@@ -598,10 +671,10 @@ docker network inspect ubuntu-network
 
 //터미널 창을 2개 여세요. 각각의 창에
 창1: 
-docker container run --rm -it --name mkbahk_ubuntu01 --network ubuntu-network ubuntu:18.04 bash
+docker container run --rm -it --name ubuntu01 --network ubuntu-network ubuntu:18.04 bash
 
 창2:
-docker container run --rm -it --name mkbahk_ubuntu02 --network ubuntu-network ubuntu:18.04 bash
+docker container run --rm -it --name ubuntu02 --network ubuntu-network ubuntu:18.04 bash
 
 //두개의 ubuntu:18.04 컨테이너에 아래 명령들을 수행해 ip관련 툴들을 설치합니다.
 
@@ -622,7 +695,7 @@ docker container run --rm -it --name mkbahk_ubuntu02 --network ubuntu-network ub
 	ping ubuntu02.ubuntu-network
 
 //창3 새로 여세요
-docker container run --rm -it --name mkbahk_ubuntu03 ubuntu:18.04 bash
+docker container run --rm -it --name ubuntu03 ubuntu:18.04 bash
 	apt update -y
 	apt install iputils-ping -y   	
 	apt install net-tools -y 		
@@ -704,7 +777,7 @@ http://ip_address:7777/
 //smartcar training & inferece 환경구축 및 최종 실행행
 //원래는 이러한 순서데로 개발환경을 만들어 갔을 것입니다. 
 
-docker run -it --name mkbahk_SmartCar ubuntu:18.04 bash
+docker run -it --name SmartCar ubuntu:18.04 bash
   apt update -y
   apt install iputils-ping -y   	
   apt install net-tools -y 		
@@ -995,14 +1068,14 @@ docker container ls
 
 
 
-docker service create --name mkbahk_web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
+docker service create --name web --publish 8380:80 --replicas 6 mkbahk/nginxscale:1.0 
 docker service ls
 docker container ls   //모든 호스트에서 쳐보세요.
 
 http://192.168.56.202:8380
 
-docker service scale mkbahk_web=12
-docker service rm mkbahk_web
+docker service scale web=12
+docker service rm web
 
 docker rm -f $(docker ps -q -aq)  
 
@@ -1070,7 +1143,7 @@ CI/CD 중 CI->Jenkins, CD-Kubernetes, Jenkins를 이용한 CI 구현
 =====================================================================================
 
 
-docker run -u root -d -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
+docker run -u root -d --restart=always -p 8282:8080 -v /root/jenkins:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker  jenkins/jenkins:latest
 
 http://srv161:8282/
 Username: admin
@@ -1220,7 +1293,7 @@ iptables -L
 iptables -F 
 
 //문제가 있는 경우 아래와 같은 메세지 출력
-root@srv162:/var/lib/docker/containers# docker run -d -it -p 8484:80 --name mkbahk_nginx nginx:latest
+root@srv162:/var/lib/docker/containers# docker run -d -it -p 8484:80 --name nginx nginx:latest
 7fd353671ba4721216ec1512152b38b2e773a359c88c26247565664fe5421340
 docker: Error response from daemon: driver failed programming external connectivity on endpoint mkbahk-nginx (b8a1ca53f0ad48fa8b62408cfe705c93387cd63d0279529a5dba1110f40da17e):  (iptables failed: iptables --wait -t filter -A DOCKER ! -i docker0 -o docker0 -p tcp -d 172.17.0.2 --dport 80 -j ACCEPT: iptables: No chain/target/match by that name.
  (exit status 1)).

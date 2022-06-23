@@ -1289,6 +1289,10 @@ node {
     }
 }
 
+
+ sh(script: 'docker service update --replicas=6 --name=nginxweb mkbahk/nginxscale:0.${BUILD_NUMBER}')
+
+
 //Docker-compose
 node {
 	stage('Pull') {
@@ -1313,6 +1317,9 @@ node {
 
 //docker swarm 배포
 docker service update --image mkbahk/nginxscale:${BUILD_NUMBER} web-app
+
+sh(script: 'docker service update --publish 8380:80 --replicas 6 --name=nginxweb --image nginxscale:0.${BUILD_NUMBER}')
+
 
 //Kubernetes 배포
 kubectl set image -f nginx-scale.yml app=mkbahk/nginxscale:${BUILD_NUMBER}

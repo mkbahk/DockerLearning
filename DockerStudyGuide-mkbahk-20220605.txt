@@ -1026,6 +1026,9 @@ http://ip_address:8380/
 http://ip_address:8389/
 
 docker-compose up -d --scale web=3
+
+docker stop 명령으로 3개 중 하나를 죽입니다. #자동복구가 않됩니다. 수동 scale명령으로 다시 조정해야 합니다. docker stack은 자동복구 가능
+
 docker-compose down
 cd
 
@@ -1089,7 +1092,7 @@ docker container ls -a
 
 //서비스에 소속된 컨테이너 삭제 테스트
 3개 워커 중 하나의 워커에서 docker stop 명령으로 강제로 삭제 후 다시 서비스가 살아나는 것을 확인
-docker container sotp ...
+docker container stop ...
 docker container ls
 
 
@@ -1145,8 +1148,6 @@ services:
 networks:
    nginx-net:
 
-# docker stack deploy -c docker-compose.yaml nginxstack
-
 
 docker stack deploy -c docker-compose.yaml nginxstack
 
@@ -1165,7 +1166,7 @@ docker stack rm nginxstack
 
 
 =====================================================================================
-CI/CD 중 CI->Jenkins, CD-Kubernetes, Jenkins를 이용한 CI 구현
+CI/CD 중 Jenkins를 이용한 CI 구현CI->Docker+github.com+dockerhub.com+Jenkins, CD->Kubernetes
 =====================================================================================
 
 
@@ -1218,24 +1219,29 @@ node {
 
 //Basic Step
 node {
-    stage('Pull') {
+    stage('Git Pull') {
         git 'https://github.com/mkbahk/nginxscale.git'
     }
-    stage('Unit Test') {
-    	sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+    stage('Unit Test') {  
+        try  {
+          sh(script: 'docker image rm mkbahk/nginxscale:latest')  
+        } 
+        catch(e) {
+            echo "No nginxscale container to remove"
+        }
     }
-    stage('Build') {
+    stage('Docker Build') {
         sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
     }
-    stage('Tag') {
+    stage('Change Tag') {
         sh(script: 'docker tag mkbahk/nginxscale:latest mkbahk/nginxscale:2.1')
     }
-    stage('Push') {
-        sh(script: 'docker login -u mkbahk -p "P@ssw0rd"' )
+    stage('Push to Dockerhub') {
+        sh(script: 'docker login -u mkbahk -p "P@ssW0rd"' )
         sh(script: 'docker push mkbahk/nginxscale:2.1' )
         sh(script: 'docker push mkbahk/nginxscale:latest' )
     }
-    stage('Deploy') {
+    stage('Deploy as a Service') {
         try {
             sh(script: 'docker stop nginxscale')
             sh(script: 'docker rm nginxscale')
@@ -1253,7 +1259,12 @@ node {
             git 'https://github.com/mkbahk/nginxscale.git'
         }
         stage('Unit Test') {
-	          sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
+            try  {
+              sh(script: 'docker image rm mkbahk/nginxscale:latest')  
+            } 
+            catch(e) {
+                echo "No nginxscale container to remove"
+            }
         }
         stage('Build') {
             sh(script: 'docker build --force-rm=true -t mkbahk/nginxscale:latest .')    
@@ -1308,7 +1319,7 @@ kubectl set image -f nginx-scale.yml app=mkbahk/nginxscale:${BUILD_NUMBER}
 
 
 =====================================================================================
-Docker and IPTables
+(참고) Docker and IPTables
 =====================================================================================
 //Docker는 기본적으로 iptables 기능을 통해 host외부로 통신
 //iptable은 L-3 Routing, NAT(Network Address Translation), Firewall 역할을 수행

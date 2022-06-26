@@ -141,7 +141,7 @@ docker start nginxweb
 //docker container 의 3가지 상태
   1) image상태   ##docker image ls
   2) running container상태  ##docker container ls
-  3) stopped container상태 ##docker container ls -a, 모든 설정정보도 같이 보관 중이라 start시키면 이전 상태정보로 바로 수행가능, 이 상태정보와 새로 수행되는 컨터이너의 상태정보를 중복되면 않됨
+  3) stopped container상태 ##docker container ls -a, 실행하기 위한 설정정보도 같이 보관 중이라 start시키면 이전 상태정보로 바로 수행가능, 이 상태정보와 새로 수행되는 컨터이너의 상태정보를 중복되면 않됨
 
 
 docker image rm(==docker rmi) //image 삭제
@@ -151,7 +151,11 @@ docker network rm
 
 //실행 중인 컨테이너들에게 영향을 주지 않음
 docker image prune  //docker image rm -f $(docker image ls -aq)
+
 docker container prune  // docker container rm -f $(docker container ls -aq)
+docker container rm -f $(docker container ls -aq)
+docker continer ls -aq | xargs docker stop | xargs docker rm
+
 docker volume prune
 docker network prune
 docker system prune -a  //system초기화, 기 수행중인 컨테이너 관련 내용이나 특히, 특이하게 "volume"은 지우지 않음
